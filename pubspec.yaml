@@ -1,0 +1,38 @@
+name: rvlabel_app
+description: App da RV Label (colecao Essence) - Projeto Integrado UNIFEOB 2026.2
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  url_launcher: ^6.3.0
+  http: ^1.2.0
+  firebase_core: ^4.9.0
+  firebase_ai: ^3.12.1
+  genui: ^0.9.0
+  json_schema_builder: ^0.1.3
+  firebase_app_check: ^0.4.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  shaders:
+    - shaders/liquido.frag
+  assets:
+    - assets/fotos/
+    - assets/catalogo.json
+  # DM Serif Display (licença OFL em assets/fonts/OFL.txt): títulos e nomes de peça.
+  fonts:
+    - family: DMSerifDisplay
+      fonts:
+        - asset: assets/fonts/DMSerifDisplay-Regular.ttf
+        - asset: assets/fonts/DMSerifDisplay-Italic.ttf
+          style: italic

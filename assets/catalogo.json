@@ -1,0 +1,96 @@
+{
+  "pecas": [
+    {
+      "id": "essence-004", "nome": "Body Manga Longa Recorte", "categoria": "bodys",
+      "descricao": "Body de manga longa com recorte no decote.", "preco": 74.90,
+      "fotos": ["assets/fotos/body-manga-longa-recorte-cinza.jpg"],
+      "cores": [{ "nome": "Cinza" }]
+    },
+    {
+      "id": "essence-005", "nome": "Blusa Um Ombro Com Laço", "categoria": "blusas",
+      "descricao": "Blusa de um ombro só, manga longa e laço para amarrar no pescoço.", "preco": 72.90,
+      "fotos": ["assets/fotos/blusa-um-ombro-com-laco-preto.jpg"],
+      "cores": [{ "nome": "Preto" }]
+    },
+    {
+      "id": "essence-006", "nome": "Vestido costa nua c/ fenda", "categoria": "vestidos",
+      "descricao": "Vestido longo de um ombro, costas nuas e fenda.", "preco": 109.90,
+      "fotos": ["assets/fotos/vestido-costa-nua-fenda-azul-marinho-frente.jpg"],
+      "fotoCostas": "assets/fotos/vestido-costa-nua-fenda-azul-marinho-costas.jpg",
+      "cores": [{ "nome": "Azul-marinho" }]
+    },
+    {
+      "id": "essence-007", "nome": "Body Alças", "categoria": "bodys",
+      "descricao": "Body com alças finas e argolas douradas.", "preco": 69.90,
+      "fotos": ["assets/fotos/body-alcas-marrom.jpg"],
+      "cores": [{ "nome": "Marrom" }]
+    },
+    {
+      "id": "essence-008", "nome": "Blusa Ombro Só", "categoria": "blusas",
+      "descricao": "Blusa curta com caimento de um ombro só.", "preco": 64.90,
+      "fotos": ["assets/fotos/blusa-ombro-so-branco.jpg"],
+      "cores": [{ "nome": "Branco" }, { "nome": "Azul-marinho", "tom": "#1F2A5C" }]
+    },
+    {
+      "id": "essence-009", "nome": "Body Alças Cruzadas", "categoria": "bodys",
+      "descricao": "Body com alças cruzadas nas costas.", "preco": 69.90,
+      "fotos": ["assets/fotos/body-alcas-cruzadas-branco.jpg"],
+      "cores": [{ "nome": "Branco" }]
+    },
+    {
+      "id": "essence-010", "nome": "Top Um Ombro Com Amarração", "categoria": "tops",
+      "descricao": "Top de um ombro só com amarração na cintura.", "preco": 66.90,
+      "fotos": ["assets/fotos/top-um-ombro-amarracao-preto.jpg"],
+      "cores": [{ "nome": "Preto" }]
+    },
+    {
+      "id": "essence-011", "nome": "Body Um Ombro", "categoria": "bodys",
+      "descricao": "Body de um ombro só, modelagem justa.", "preco": 49.90,
+      "fotos": ["assets/fotos/body-um-ombro-vinho.jpg"],
+      "cores": [{ "nome": "Vinho" }]
+    },
+    {
+      "id": "essence-012", "nome": "Short Alfaiataria", "categoria": "shorts",
+      "descricao": "Short de alfaiataria de cintura alta.", "preco": 44.90,
+      "fotos": ["assets/fotos/body-um-ombro-vinho.jpg"],
+      "cores": [{ "nome": "Preto" }, { "nome": "Vinho", "tom": "#6E1F35" }]
+    },
+    {
+      "id": "essence-013", "nome": "Blusa assimétrica", "categoria": "blusas",
+      "descricao": "Blusa de um ombro só com barra assimétrica.", "preco": 44.90,
+      "fotos": ["assets/fotos/blusa-assimetrica-preto.jpg"],
+      "cores": [{ "nome": "Preto" }]
+    },
+    {
+      "id": "essence-014", "nome": "Short Alfaiataria Verde Militar", "categoria": "shorts",
+      "descricao": "Short de alfaiataria com pregas e cintura alta.", "preco": 49.90,
+      "fotos": ["assets/fotos/short-alfaiataria-verde-militar.jpg"],
+      "cores": [{ "nome": "Verde militar" }]
+    },
+    {
+      "id": "essence-015", "nome": "Regata Alcinha", "categoria": "blusas",
+      "descricao": "Regata de alcinha fina.", "preco": 39.90,
+      "fotos": ["assets/fotos/regata-alcinha-amarelo.jpg"],
+      "cores": [{ "nome": "Amarelo" }]
+    },
+    {
+      "id": "essence-016", "nome": "Body Costas Nua", "categoria": "bodys",
+      "descricao": "Body frente-única com costas nuas.", "preco": 54.90,
+      "fotos": ["assets/fotos/body-costas-nua-cinza.jpg"],
+      "cores": [{ "nome": "Cinza" }]
+    },
+    {
+      "id": "essence-017", "nome": "Body Ombro a Ombro Manga Longa", "categoria": "bodys",
+      "descricao": "Body de manga longa com decote ombro a ombro.", "preco": 54.90,
+      "fotos": ["assets/fotos/body-ombro-a-ombro-manga-longa-cinza.jpg"],
+      "cores": [{ "nome": "Cinza" }]
+    },
+    {
+      "id": "essence-018", "tipo": "acessorio", "nome": "Cinto Corrente Medalhões Prateado",
+      "categoria": "acessorios",
+      "descricao": "Cinto de corrente com medalhões prateados.", "preco": 29.90,
+      "fotos": ["assets/fotos/cinto-corrente-medalhoes-prateado.jpg"],
+      "cores": [{ "nome": "Prateado" }]
+    }
+  ]
+}
