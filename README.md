@@ -36,5 +36,10 @@ Para usar com o seu projeto:
 
 Sem as chaves o app abre normalmente; só o Assistente de IA fica indisponível.
 
+## Documentação
+- [Diagrama de classes](docs/diagrama-de-classes.md): as classes do app e onde aparece cada requisito de orientação a objetos.
+- [Decisões do projeto](docs/decisoes.md): o que foi escolhido e por quê.
+- [Evolução futura](docs/evolucao-futura.md): o que pode vir depois.
+
 ## Testes
 `flutter test`

@@ -55,3 +55,4 @@ app.*.map.json
 .env
 *.bak
 firebase.json
+docs-local/
