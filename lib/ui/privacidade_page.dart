@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'fundo_liquido.dart';
+import 'rolagem_suave.dart';
 
 /// Política de privacidade (LGPD) e termos de uso, em linguagem direta.
 class PrivacidadePage extends StatelessWidget {
@@ -33,7 +34,7 @@ class PrivacidadePage extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: const Text('Privacidade e termos')),
         body: FundoLiquido(
-          child: ListView(
+          child: ListaSuave(
             padding: const EdgeInsets.all(24),
             children: [
               Center(

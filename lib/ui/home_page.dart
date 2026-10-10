@@ -8,13 +8,18 @@ import '../services/catalogo_repository.dart';
 import '../services/sacola.dart';
 import '../services/whatsapp_service.dart';
 import 'admin_page.dart';
+import 'colecao_page.dart';
 import 'componentes.dart';
+import 'contato_page.dart';
 import 'efeitos.dart';
 import 'fundo_liquido.dart';
 import 'meus_pedidos_page.dart';
+import 'novidades.dart';
 import 'peca_page.dart';
 import 'privacidade_page.dart';
+import 'rolagem_suave.dart';
 import 'sacola_page.dart';
+import 'sobre_page.dart';
 import 'tema.dart';
 
 /// Largura máxima do conteúdo (web e desktop); no celular ocupa a tela toda.
@@ -44,7 +49,7 @@ class _HomePageState extends State<HomePage> {
   Categoria? _filtro; // null = "Todos"
   final _chaveColecao = GlobalKey();
   final _chaveComo = GlobalKey();
-  final _rolagem = ScrollController();
+  final _rolagem = ControladorSuave();
   final _y = ValueNotifier<double>(0); // posição da rolagem, para os efeitos
 
   @override
@@ -96,6 +101,34 @@ class _HomePageState extends State<HomePage> {
           builder: (_) => widget.iaDisponivel
               ? AssistentePage(catalogo: widget.catalogo, sacola: widget.sacola)
               : const _IaIndisponivel(),
+        ),
+      );
+
+  List<Produto> _pecasDe(Colecao c) => widget.catalogo.todas().where(c.contem).toList();
+
+  /// Foto de apoio (Sobre e Novidades): a última peça com foto, para variar do hero.
+  String? get _fotoApoio =>
+      widget.catalogo.todas().where((p) => p.fotos.isNotEmpty).lastOrNull?.fotos.first;
+
+  void _abrirColecao(Colecao c) => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ColecaoPage(
+            colecao: c,
+            pecas: _pecasDe(c),
+            cartao: (p) => _CartaoPeca(peca: p, aoTocar: () => _abrirPeca(p)),
+          ),
+        ),
+      );
+
+  void _abrirSobre() => Navigator.push(
+      context, MaterialPageRoute(builder: (_) => SobrePage(foto: _fotoApoio)));
+
+  void _abrirContato() => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              ContatoPage(whatsapp: widget.whatsapp, fotoNovidades: _fotoApoio),
         ),
       );
 
@@ -167,10 +200,10 @@ class _HomePageState extends State<HomePage> {
                     mainAxisSpacing: 32,
                   ),
                   itemCount: pecas.length,
-                  itemBuilder: (_, i) => Revelar(
+                  itemBuilder: (_, i) => AoRolar(
                     // A chave inclui o filtro: ao trocar de categoria os cartões entram de novo.
                     key: ValueKey('${_filtro?.name}-${pecas[i].id}'),
-                    atraso: Duration(milliseconds: (i % 4) * 90),
+                    escalonar: (i % 4) * 0.1,
                     child: _CartaoPeca(
                       peca: pecas[i],
                       aoTocar: () => _abrirPeca(pecas[i]),
@@ -178,8 +211,15 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
+            SliverToBoxAdapter(child: _colecoes(context)),
             SliverToBoxAdapter(child: _sobre(context)),
             SliverToBoxAdapter(child: _comoComprar(context)),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 112),
+                child: Novidades(whatsapp: widget.whatsapp, foto: _fotoApoio),
+              ),
+            ),
             SliverToBoxAdapter(child: _rodape(context)),
           ],
         ),
@@ -229,6 +269,27 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               ),
                               const Spacer(),
+                              if (MediaQuery.sizeOf(context).width >= 760) ...[
+                                _linkMenu('Loja', () => _irPara(_chaveColecao)),
+                                _linkMenu('Sobre', _abrirSobre),
+                                _linkMenu('Contato', _abrirContato),
+                              ] else
+                                PopupMenuButton<VoidCallback>(
+                                  tooltip: 'Menu',
+                                  icon: const Icon(Icons.menu),
+                                  color: corPainel,
+                                  onSelected: (acao) => acao(),
+                                  itemBuilder: (_) => [
+                                    PopupMenuItem(
+                                        value: () => _irPara(_chaveColecao),
+                                        child: const Text('Loja')),
+                                    PopupMenuItem(
+                                        value: _abrirSobre, child: const Text('Sobre')),
+                                    PopupMenuItem(
+                                        value: _abrirContato,
+                                        child: const Text('Contato')),
+                                  ],
+                                ),
                               IconButton(
                                 tooltip: 'Assistente RV (IA)',
                                 icon: const Icon(Icons.auto_awesome),
@@ -413,7 +474,7 @@ class _HomePageState extends State<HomePage> {
           constraints: const BoxConstraints(maxWidth: _larguraMax),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 72, 24, 0),
-            child: Revelar(
+            child: AoRolar(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -470,6 +531,52 @@ class _HomePageState extends State<HomePage> {
         ),
       );
 
+  Widget _linkMenu(String rotulo, VoidCallback aoTocar) => TextButton(
+        onPressed: aoTocar,
+        child: Text(rotulo.toUpperCase(),
+            style: const TextStyle(fontSize: 13, letterSpacing: 2)),
+      );
+
+  // ---------- coleções: dois cartões grandes com foto ----------
+
+  Widget _colecoes(BuildContext context) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: _larguraMax),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 112, 24, 0),
+            child: LayoutBuilder(builder: (context, caixa) {
+              final largo = caixa.maxWidth >= 640;
+              final cartoes = [
+                for (final (i, c) in colecoes.indexed)
+                  AoRolar(
+                    deslocamento: const Offset(0, 96),
+                    escalonar: i * 0.12,
+                    child: CartaoColecao(
+                      colecao: c,
+                      foto: primeiraFoto(_pecasDe(c)),
+                      aoTocar: () => _abrirColecao(c),
+                    ),
+                  ),
+              ];
+              if (largo) {
+                return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  for (final (i, c) in cartoes.indexed) ...[
+                    if (i > 0) const SizedBox(width: 12),
+                    Expanded(child: c),
+                  ],
+                ]);
+              }
+              return Column(children: [
+                for (final (i, c) in cartoes.indexed) ...[
+                  if (i > 0) const SizedBox(height: 12),
+                  c,
+                ],
+              ]);
+            }),
+          ),
+        ),
+      );
+
   // ---------- seções de texto (copy do site original) ----------
 
   Widget _sobre(BuildContext context) {
@@ -481,7 +588,8 @@ class _HomePageState extends State<HomePage> {
           padding: const EdgeInsets.fromLTRB(24, 112, 24, 0),
           child: LayoutBuilder(builder: (context, caixa) {
             final largo = caixa.maxWidth >= 820;
-            final titulo = Revelar(
+            final titulo = AoRolar(
+              deslocamento: const Offset(-64, 0),
               child: Text('Roupa que veste história, não tendência.',
                   style: tema.headlineMedium?.copyWith(
                       fontSize: largo ? 46 : 32, height: 1.1, letterSpacing: -0.8)),
@@ -489,8 +597,7 @@ class _HomePageState extends State<HomePage> {
             final corpo = Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Revelar(
-                  atraso: Duration(milliseconds: 150),
+                const AoRolar(
                   child: Text(
                     'A RV Label nasceu da vontade de fazer moda com identidade — '
                     'peças pensadas com carinho, produzidas em pequenos lotes e '
@@ -505,8 +612,9 @@ class _HomePageState extends State<HomePage> {
                   (Icons.diamond_outlined, 'Peças únicas', 'Cortes assimétricos, com identidade.'),
                   (Icons.chat_bubble_outline, 'Atendimento direto', 'Cada compra combinada com você, sem intermediário.'),
                 ].indexed)
-                  Revelar(
-                    atraso: Duration(milliseconds: 250 + i * 110),
+                  AoRolar(
+                    deslocamento: const Offset(64, 0),
+                    escalonar: i * 0.08,
                     child: _Pilar(icone: p.$1, titulo: p.$2, texto: p.$3),
                   ),
               ],
@@ -545,13 +653,12 @@ class _HomePageState extends State<HomePage> {
               ];
               final cartoes = [
                 for (final (i, p) in passos.indexed)
-                  Revelar(
-                    atraso: Duration(milliseconds: 120 + i * 130),
+                  AoRolar(
                     child: _CartaoPasso(numero: '${i + 1}', icone: p.$1, texto: p.$2),
                   ),
               ];
               return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Revelar(
+                AoRolar(
                   child: Text('Como comprar',
                       style: Theme.of(context).textTheme.headlineMedium),
                 ),
@@ -611,7 +718,10 @@ class _HomePageState extends State<HomePage> {
     );
     final loja = coluna('Loja', [
       link('Coleção Essence', () => _irPara(_chaveColecao)),
+      for (final c in colecoes) link(c.titulo, () => _abrirColecao(c)),
       link('Como comprar', () => _irPara(_chaveComo)),
+      link('Sobre', _abrirSobre),
+      link('Contato', _abrirContato),
     ]);
     final ajuda = coluna('Ajuda', [
       link('Meus pedidos', () => Navigator.push(context,
@@ -869,8 +979,12 @@ class _CartaoPecaState extends State<_CartaoPeca> {
                           scale: _sobre ? 1.07 : 1,
                           duration: reduzir ? Duration.zero : const Duration(milliseconds: 500),
                           curve: Curves.easeOutCubic,
-                          child: fotoOuPlaceholder(p.fotos.firstOrNull,
-                              variante: p.cores.first, heroTag: 'foto-${p.id}'),
+                          child: ParallaxFoto(
+                            intensidade: 14,
+                            escala: 1.1,
+                            child: fotoOuPlaceholder(p.fotos.firstOrNull,
+                                variante: p.cores.first, heroTag: 'foto-${p.id}'),
+                          ),
                         ),
                         Positioned(
                           left: 0,

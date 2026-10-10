@@ -4,6 +4,7 @@ import '../core/moeda.dart';
 import '../services/api.dart';
 import '../services/api_admin.dart';
 import 'fundo_liquido.dart';
+import 'rolagem_suave.dart';
 
 /// O cliente acompanha o pedido com número + telefone (sem conta).
 class MeusPedidosPage extends StatefulWidget {
@@ -58,7 +59,7 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Meus pedidos')),
       body: FundoLiquido(
-        child: ListView(padding: const EdgeInsets.all(24), children: [
+        child: ListaSuave(padding: const EdgeInsets.all(24), children: [
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),

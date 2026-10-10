@@ -5,6 +5,7 @@ import '../services/api.dart';
 import '../services/api_admin.dart';
 import '../services/catalogo_repository.dart';
 import 'fundo_liquido.dart';
+import 'rolagem_suave.dart';
 
 /// Cadastro de produto novo (só chega aqui quem entrou como administrador).
 /// As fotos são escolhidas entre as que já estão em assets/fotos/.
@@ -116,7 +117,7 @@ class _AdminProdutoPageState extends State<AdminProdutoPage> {
               constraints: const BoxConstraints(maxWidth: 640),
               child: Form(
                 key: _form,
-                child: ListView(padding: const EdgeInsets.all(20), children: [
+                child: ListaSuave(padding: const EdgeInsets.all(20), children: [
                   TextFormField(
                     controller: _codigo,
                     decoration: const InputDecoration(labelText: 'Código (ex.: essence-020)'),

@@ -9,6 +9,7 @@ import '../services/catalogo_repository.dart';
 import '../services/sacola.dart';
 import '../ui/fundo_liquido.dart';
 import '../ui/message_bubble.dart';
+import '../ui/rolagem_suave.dart';
 import 'catalogo_pecas.dart';
 import 'instrucoes.dart';
 
@@ -41,7 +42,7 @@ class AssistentePage extends StatefulWidget {
 class _AssistentePageState extends State<AssistentePage> {
   final _itens = <_ItemConversa>[];
   final _texto = TextEditingController();
-  final _rolagem = ScrollController();
+  final _rolagem = ControladorSuave();
 
   late final ChatSession _chat;
   late final SurfaceController _controller;

@@ -5,6 +5,7 @@ import '../services/sacola.dart';
 import 'componentes.dart';
 import 'efeitos.dart';
 import 'fundo_liquido.dart';
+import 'rolagem_suave.dart';
 import 'tema.dart';
 
 class PecaPage extends StatefulWidget {
@@ -17,6 +18,14 @@ class PecaPage extends StatefulWidget {
 }
 
 class _PecaPageState extends State<PecaPage> {
+  final _rolagem = ControladorSuave();
+
+  @override
+  void dispose() {
+    _rolagem.dispose();
+    super.dispose();
+  }
+
   late VarianteCor _cor = widget.peca.cores.first;
   late String _tamanho = widget.peca.tamanhos.first;
   int _quantidade = 1;
@@ -123,6 +132,7 @@ class _PecaPageState extends State<PecaPage> {
           builder: (context, c) {
             final largo = c.maxWidth >= 820;
             return SingleChildScrollView(
+              controller: _rolagem,
               padding: const EdgeInsets.all(20),
               child: Center(
                 child: ConstrainedBox(

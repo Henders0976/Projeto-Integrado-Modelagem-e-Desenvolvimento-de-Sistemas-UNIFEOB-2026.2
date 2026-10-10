@@ -6,6 +6,7 @@ import '../services/api_admin.dart';
 import '../services/catalogo_repository.dart';
 import 'admin_produto_page.dart';
 import 'fundo_liquido.dart';
+import 'rolagem_suave.dart';
 
 const _statusPedido = ['Recebido', 'Em separação', 'Enviado', 'Cancelado'];
 
@@ -185,7 +186,7 @@ class _PedidosAdminState extends State<_PedidosAdmin>
           if (lista.isEmpty) return const Center(child: Text('Nenhum pedido ainda.'));
           return RefreshIndicator(
             onRefresh: () async => recarregar(),
-            child: ListView(padding: const EdgeInsets.all(12), children: [
+            child: ListaSuave(padding: const EdgeInsets.all(12), children: [
               for (final p in lista)
                 Card(
                   child: ExpansionTile(
@@ -292,7 +293,7 @@ class _ProdutosAdminState extends State<_ProdutosAdmin>
           }
           return RefreshIndicator(
             onRefresh: () async => recarregar(),
-            child: ListView(padding: const EdgeInsets.all(12), children: [
+            child: ListaSuave(padding: const EdgeInsets.all(12), children: [
               for (final p in snap.data!)
                 Card(
                   child: ExpansionTile(
