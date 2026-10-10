@@ -25,10 +25,21 @@ abstract class CatalogoRepository {
       final bruto = await rootBundle.loadString('assets/catalogo.json');
       dados = jsonDecode(bruto) as Map<String, dynamic>;
     }
-    final lista = dados['pecas'] as List;
-    return _CatalogoJson._([
-      for (final p in lista) Produto.fromJson(p as Map<String, dynamic>)
-    ]);
+    return deJson(dados);
+  }
+
+  /// Monta o catálogo a partir do JSON. Uma peça com dado inválido (por exemplo,
+  /// categoria que o app não conhece) é ignorada em vez de derrubar o app inteiro.
+  static CatalogoRepository deJson(Map<String, dynamic> dados) {
+    final produtos = <Produto>[];
+    for (final p in dados['pecas'] as List) {
+      try {
+        produtos.add(Produto.fromJson(p as Map<String, dynamic>));
+      } catch (e) {
+        debugPrint('Peça ignorada (${p is Map ? p['id'] : p}): $e');
+      }
+    }
+    return _CatalogoJson._(produtos);
   }
 }
 

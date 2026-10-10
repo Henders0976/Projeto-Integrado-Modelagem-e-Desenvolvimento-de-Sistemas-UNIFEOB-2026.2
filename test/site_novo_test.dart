@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rvlabel_app/models/models.dart';
+import 'package:rvlabel_app/services/catalogo_repository.dart';
 import 'package:rvlabel_app/ui/colecao_page.dart';
 import 'package:rvlabel_app/ui/contato_page.dart';
 import 'package:rvlabel_app/ui/efeitos.dart';
@@ -66,6 +67,16 @@ void main() {
     await tester.sendEventToBinding(mouse.scroll(const Offset(0, 100)));
     await tester.pumpAndSettle();
     expect(c.offset, 200); // os dois cliques se somaram
+  });
+
+  test('catálogo ignora peça com categoria desconhecida em vez de quebrar', () {
+    final catalogo = CatalogoRepository.deJson({
+      'pecas': [
+        {'id': 'ok-1', 'nome': 'Blusa', 'categoria': 'blusas', 'preco': 10.0},
+        {'id': 'demo-1', 'nome': 'Body Canelado', 'categoria': 'Body', 'preco': 79.9},
+      ],
+    });
+    expect(catalogo.todas().map((p) => p.id), ['ok-1']);
   });
 
   test('toda categoria do catálogo cai em alguma coleção', () {
