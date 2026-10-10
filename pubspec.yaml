@@ -1,7 +1,7 @@
 name: rvlabel_app
 description: App da RV Label (colecao Essence) - Projeto Integrado UNIFEOB 2026.2
 publish_to: none
-version: 1.1.0
+version: 1.1.1
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -21,6 +21,28 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.4
+
+# Ícone do app: o letreiro RV·LABEL. Gera os ícones de todas as plataformas com
+#   dart run flutter_launcher_icons
+# Fontes em assets/icon/ (1024 px; a de primeiro plano tem o letreiro menor, para o
+# recorte circular do Android).
+flutter_launcher_icons:
+  image_path: "assets/icon/app_icon.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  adaptive_icon_background: "#841621"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  web:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+    background_color: "#841621"
+    theme_color: "#841621"
+  windows:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+    icon_size: 256
 
 flutter:
   uses-material-design: true
