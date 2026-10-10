@@ -1,8 +1,9 @@
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/foundation.dart';
 
-/// Token de debug do App Check. O iniciar.* gera e passa via --dart-define;
-/// ele precisa estar cadastrado no console (App Check > Apps > Gerenciar tokens de debug).
+/// Token de debug do App Check, passado com --dart-define=APP_CHECK_DEBUG_TOKEN=...
+/// (veja o README). Ele precisa estar cadastrado no console
+/// (App Check > Apps > Gerenciar tokens de debug).
 const _tokenDebug = String.fromEnvironment('APP_CHECK_DEBUG_TOKEN');
 
 /// Nome do dispositivo/plataforma em que o app está rodando.
