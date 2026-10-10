@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import '../core/indicadores_vendas.dart';
 import '../core/moeda.dart';
@@ -148,8 +151,15 @@ mixin _Carrega<T extends StatefulWidget, L> on State<T> {
   late Future<List<L>> futuro = buscar();
   Future<List<L>> buscar();
   void recarregar() => setState(() => futuro = buscar());
-  void aviso(Object e) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(e is ApiErro ? e.mensagem : 'Sem conexão.')));
+  /// "Sem conexão" só para falha de rede de verdade; qualquer outro erro mostra o motivo.
+  void aviso(Object e) {
+    final texto = e is ApiErro
+        ? e.mensagem
+        : (e is TimeoutException || e is http.ClientException)
+            ? 'Sem conexão com o servidor.'
+            : 'Erro inesperado: $e';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
+  }
 }
 
 class _PedidosAdmin extends StatefulWidget {
