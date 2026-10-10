@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/indicadores_vendas.dart';
 import '../core/moeda.dart';
 import '../services/api.dart';
 import '../services/api_admin.dart';
@@ -184,9 +185,14 @@ class _PedidosAdminState extends State<_PedidosAdmin>
           }
           final lista = snap.data!;
           if (lista.isEmpty) return const Center(child: Text('Nenhum pedido ainda.'));
+          final ind = IndicadoresVendas.calcular([
+            for (final p in lista)
+              if (p['status'] != 'Cancelado') (p['total'] as num).toDouble()
+          ]);
           return RefreshIndicator(
             onRefresh: () async => recarregar(),
             child: ListaSuave(padding: const EdgeInsets.all(12), children: [
+              if (ind != null) _CartaoIndicadores(ind),
               for (final p in lista)
                 Card(
                   child: ExpansionTile(
@@ -234,6 +240,28 @@ class _PedidosAdminState extends State<_PedidosAdmin>
     }
     await _mudar(id, status);
   }
+}
+
+/// Resumo das vendas (pedidos não cancelados) no topo da aba Pedidos.
+class _CartaoIndicadores extends StatelessWidget {
+  const _CartaoIndicadores(this.ind);
+  final IndicadoresVendas ind;
+
+  @override
+  Widget build(BuildContext context) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Indicadores de vendas (${ind.quantidade} pedidos)',
+                style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            Text('Soma: ${formatarReais(ind.soma)}'),
+            Text('Média: ${formatarReais(ind.media)}'),
+            Text('Maior: ${formatarReais(ind.maior)}'),
+            Text('Menor: ${formatarReais(ind.menor)}'),
+          ]),
+        ),
+      );
 }
 
 class _ProdutosAdmin extends StatefulWidget {
