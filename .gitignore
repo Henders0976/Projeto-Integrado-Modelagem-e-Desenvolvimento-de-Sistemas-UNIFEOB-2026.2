@@ -50,8 +50,8 @@ app.*.map.json
 # Token de debug do App Check (nao versionar)
 .appcheck-token
 
-# Servidor e banco ficam so na maquina local
-/api/
+# O servidor (api/) e versionado, mas o .env com as senhas e a chave do JWT nunca
+/api/node_modules/
 .env
 *.bak
 firebase.json

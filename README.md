@@ -45,7 +45,7 @@ Só com isso o app já abre. O Assistente de IA e a parte do servidor são opcio
 
 ## Servidor e banco
 
-Pedidos, "Meus pedidos", o login e o painel administrativo conversam com uma API Node.js + MySQL (banco `Rv_Label`). **A pasta `api/` não faz parte deste repositório** (fica só na máquina local, como diz o `.gitignore`), e as credenciais e o `.env` nunca são versionados.
+Pedidos, "Meus pedidos", o login e o painel administrativo conversam com uma API Node.js + MySQL (banco `Rv_Label`). O código dessa API está na pasta [`api/`](api/), mas **as credenciais e o `.env` nunca são versionados**: copie `api/.env.example` para `api/.env` e preencha `DB_USER`, `DB_PASSWORD` e `JWT_SECRET` (um texto aleatório com 48+ caracteres). O passo a passo (criar o banco, popular o catálogo e definir a senha da administradora) está em [`api/COMO-RODAR.md`](api/COMO-RODAR.md).
 
 O app procura a API em `http://localhost:3000`. Para outro endereço:
 
@@ -109,6 +109,29 @@ O ícone é o letreiro RV·LABEL. As imagens-base ficam em `assets/icon/`; para 
 ```bash
 flutter pub run flutter_launcher_icons
 ```
+
+## Versão para site
+
+Além do app, o repositório tem uma **versão para site** da loja, na pasta [`site/`](site/). É um projeto separado do app: tem o próprio `package.json` e não interfere em nada no `flutter run`, no `flutter build` nem nas pastas `lib/`, `android/`, `ios/`, `web/` e `windows/`. (A pasta `web/` é o alvo web do Flutter; o site em React vive só em `site/`.)
+
+- **React 18 + Vite + TypeScript + Tailwind**, com poucas dependências.
+- Mesmo catálogo, mesmas fotos, mesma fonte e mesmas cores do app. `npm run sync` copia `assets/catalogo.json`, as fotos, as fontes e os ícones do app para `site/public/`.
+- **Páginas:** Início, Loja, Peça, Sacola, Coleções, Sobre, Contato, Novidades, Meus pedidos e Privacidade/termos. A **área administrativa fica só no app**.
+- **Loja** com filtro por categoria e duas visões: a **vitrine** (lista de nomes com a prévia da foto e uma transição que abre a peça em tela cheia) e a **grade**.
+- **Fechamento de pedido** pelo WhatsApp, com a mesma mensagem do app. Se houver a API (a mesma das rotas `GET /produtos`, `POST /pedidos` e `GET /pedidos/:id`), o pedido também é gravado no banco.
+- **Animações ligadas à rolagem** (scroll-linked, parallax nas fotos), que respeitam "reduzir movimento" do sistema.
+
+```bash
+cd site
+npm install
+npm run dev        # http://localhost:5173
+```
+
+Outros comandos: `npm test` (testes), `npm run build` (gera `site/dist/`, um site estático) e `npm run sync` (traz do app o catálogo e as fotos de novo, sempre que mudarem).
+
+Configuração em `site/.env` (modelo em `site/.env.example`): `VITE_WHATSAPP` (número da loja, só dígitos; sem ele o site usa o número fictício `5511999990000`), `VITE_API_URL` (endereço da API; sem ele o site é estático e o pedido segue só pelo WhatsApp) e `VITE_BASE` (subpasta de hospedagem). Nunca coloque senhas ou chaves secretas nesse arquivo: tudo o que está nele vai para o navegador.
+
+O resultado do build pode ser publicado de graça em Cloudflare Pages, Netlify ou GitHub Pages. Detalhes, estrutura e limites conhecidos estão em [`site/README.md`](site/README.md).
 
 ## Orientação a objetos
 

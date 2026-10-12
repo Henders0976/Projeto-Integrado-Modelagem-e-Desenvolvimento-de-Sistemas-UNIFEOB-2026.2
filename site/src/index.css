@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* DM Serif Display (licença OFL em public/fonts/OFL.txt): títulos e nomes de peça. Só existe no peso normal. */
+@font-face {
+  font-family: "DM Serif Display";
+  src: url("/fonts/DMSerifDisplay-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DM Serif Display";
+  src: url("/fonts/DMSerifDisplay-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    background-color: #0b0b0b;
+    /* A barra de rolagem não some ao travar a página (overlay da vitrine): sem pulo de layout. */
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    @apply font-sans text-texto antialiased;
+    margin: 0;
+    min-height: 100vh;
+    /* Elementos que entram pelas laterais (animação) e molduras deslocadas não podem criar rolagem horizontal. */
+    overflow-x: hidden;
+    overflow-x: clip;
+  }
+
+  /* Fundo do app: vermelho que desce até o preto, com um brilho leve no alto. Fixo, não rola com a página. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(60% 40% at 18% 8%, rgba(255, 120, 120, 0.16), transparent 62%),
+      radial-gradient(50% 35% at 86% 28%, rgba(255, 255, 255, 0.07), transparent 62%),
+      linear-gradient(180deg, #b3121e 0%, #8d1823 22%, #0b0b0b 100%);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-titulo font-normal;
+  }
+
+  ::selection {
+    background: rgba(255, 255, 255, 0.4);
+  }
+
+  :focus-visible {
+    outline: 2px solid #fff7f5;
+    outline-offset: 3px;
+  }
+}
+
+@layer components {
+  /* Campos só com linha embaixo, como no app. */
+  .campo {
+    @apply block w-full border-0 border-b border-linha bg-transparent px-0 py-2 text-texto placeholder:text-suave/70 focus:border-texto focus:outline-none focus:ring-0;
+  }
+
+  .btn-cheio {
+    @apply inline-flex min-h-[52px] items-center justify-center gap-2 rounded-[2px] bg-texto px-8 text-[15px] font-semibold tracking-wide text-preto transition hover:opacity-90 disabled:opacity-50;
+  }
+
+  .btn-contorno {
+    @apply inline-flex min-h-[52px] items-center justify-center gap-2 rounded-[2px] border border-texto px-8 text-[15px] font-semibold tracking-wide text-texto transition hover:bg-texto/10;
+  }
+}
+
+/* Entrada do topo da página (hero), uma vez ao abrir. */
+@keyframes subir {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.intro {
+  animation: subir 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--atraso, 0ms);
+}
+
+/* Faixa de texto que corre sem parar (o conteúdo vem duplicado, por isso -50%). */
+@keyframes faixa {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.faixa {
+  animation: faixa 38s linear infinite;
+}
+
+/* Quem pediu menos movimento no sistema: sem animações. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .intro,
+  .faixa {
+    animation: none;
+  }
+}
