@@ -44,9 +44,11 @@ O assistente usa GenUI e o Firebase. Se o Firebase não estiver configurado, o a
 
 ## Catálogo desativado por padrão
 
-O catálogo (`assets/catalogo.json`) fica no repositório com todas as peças em `"ativo": false`. A administradora tem o controle total da loja: só aparece o que ela ativa no painel. O `seed.js` grava `ativo = 0` ao importar e nunca mexe em quem já existe, para não desfazer a escolha dela.
+O catálogo (`assets/catalogo.json`) fica no repositório com todas as peças em `"ativo": false`. A administradora tem o controle total da loja do app: só aparece lá o que ela ativa no painel. O `seed.js` grava `ativo = 0` ao importar e nunca mexe em quem já existe, para não desfazer a escolha dela.
 
-Consequência aceita: sem a API (fora do ar ou ainda não configurada), o app e o site abrem com a vitrine vazia, em vez de mostrar o catálogo embutido por cima da decisão da administradora. As fotos das peças desativadas continuam disponíveis no formulário de novo produto.
+Consequência aceita: sem a API (fora do ar ou ainda não configurada), o app abre com a vitrine vazia, em vez de mostrar o catálogo embutido por cima da decisão da administradora. As fotos das peças desativadas continuam disponíveis no formulário de novo produto.
+
+O site **não** segue essa regra: ele ignora o campo `ativo` e mostra o catálogo inteiro do `catalogo.json`. Só quando o site usa a API é que ele mostra o que a administradora ativou.
 
 ## Segredos fora do repositório
 

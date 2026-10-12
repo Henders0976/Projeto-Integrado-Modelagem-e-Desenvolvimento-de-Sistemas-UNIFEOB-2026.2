@@ -28,7 +28,7 @@ Sem o servidor (veja [Servidor e banco](#servidor-e-banco)) o app abre com a vit
 - **Assistente de estilo com IA** (GenUI + Firebase AI Logic).
 - **Animações ligadas à rolagem** (scroll-linked, parallax nas fotos), **rolagem suave** com a roda do mouse e fundo líquido animado (shader).
 - Tela de **privacidade e termos** (LGPD).
-- O catálogo fica em `assets/catalogo.json` e as fotos em `assets/fotos/`. **Todas as peças vêm desativadas** (`"ativo": false`): quem decide o que aparece na loja é a administradora, pelo painel (veja [Catálogo desativado](#catálogo-desativado)).
+- O catálogo fica em `assets/catalogo.json` e as fotos em `assets/fotos/`. **Todas as peças vêm desativadas no app** (`"ativo": false`): quem decide o que aparece na loja do app é a administradora, pelo painel (veja [Catálogo desativado](#catálogo-desativado)).
 
 ## Como rodar (desenvolvimento)
 
@@ -70,12 +70,13 @@ Rotas que o app usa:
 
 ## Catálogo desativado
 
-O catálogo de peças (`assets/catalogo.json`, 15 peças da coleção Essence) está no repositório, mas **todo desativado**, para que a administradora tenha o controle total da loja.
+O catálogo de peças (`assets/catalogo.json`, 15 peças da coleção Essence) está no repositório, mas **todo desativado no app**, para que a administradora tenha o controle total da loja do app.
 
 - **Banco:** `npm run seed` (em `api/`) importa as peças com `ativo = 0`. Importar de novo nunca liga nem desliga o que já existe, então a escolha dela fica preservada.
 - **No app:** a loja só mostra o que a administradora ativou no painel (o interruptor de cada produto). Depois de ativar uma peça, reabra o app para ela aparecer.
-- **Sem a API** (fora do ar ou sem servidor), o app e o site abrem com a vitrine vazia, porque o `catalogo.json` embutido vem desativado.
-- **Ligar uma peça direto no arquivo** (por exemplo, num site estático, sem API): troque `"ativo": false` por `true` (ou apague o campo) nessa peça e, para o site, rode `npm run sync` dentro de `site/`.
+- **Sem a API** (fora do ar ou sem servidor), o app abre com a vitrine vazia, porque o `catalogo.json` embutido vem desativado.
+- **Ligar uma peça direto no arquivo** (app sem API): troque `"ativo": false` por `true` (ou apague o campo) nessa peça.
+- **O site não é afetado:** ele continua mostrando o catálogo inteiro, porque ignora o campo `ativo` do `catalogo.json`. Só quando o site usa a API (`VITE_API_URL`) ele mostra o que a administradora ativou, como o app.
 - Produtos cadastrados pelo painel já nascem ativos. As fotos das peças desativadas continuam disponíveis no formulário de novo produto.
 
 ## Assistente de IA (Firebase)
