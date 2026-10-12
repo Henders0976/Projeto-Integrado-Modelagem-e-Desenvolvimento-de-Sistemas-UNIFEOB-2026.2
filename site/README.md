@@ -24,14 +24,14 @@ Outros comandos: `npm test` (testes), `npm run build` (gera `dist/`), `npm run p
 | Variável | Para quê | Sem ela |
 |---|---|---|
 | `VITE_WHATSAPP` | WhatsApp da loja (DDI + DDD + número, só dígitos) | usa um número **fictício** (`5511999990000`) |
-| `VITE_API_URL` | Endereço da API (Node + MySQL) | site estático: catálogo do `catalogo.json`, pedido só pelo WhatsApp e "Meus pedidos" desligado |
+| `VITE_API_URL` | Endereço da API (Node + MySQL) | site estático: usa o `catalogo.json`, que vem **todo desativado** (loja sem peças até alguém ligar `"ativo": true`), pedido só pelo WhatsApp e "Meus pedidos" desligado |
 | `VITE_BASE` | Subpasta de hospedagem (ex.: `/rvlabel_site/`) | `/` |
 
 Tudo isso vai para o navegador: **nunca** coloque senhas ou chaves secretas aqui.
 
 ### Com a API ligada
 
-O site usa as mesmas rotas do app: `GET /produtos`, `POST /pedidos` e `GET /pedidos/:id?telefone=`. Se a API estiver fora do ar, o catálogo cai no `catalogo.json` e o pedido segue só pelo WhatsApp, avisando a cliente. A API precisa aceitar o endereço do site no CORS e usar HTTPS quando o site estiver em HTTPS.
+O site usa as mesmas rotas do app: `GET /produtos`, `POST /pedidos` e `GET /pedidos/:id?telefone=`. A API só devolve as peças que a administradora ativou no painel. Se ela estiver fora do ar, o catálogo cai no `catalogo.json` (todo desativado, então a loja aparece sem peças) e o pedido segue só pelo WhatsApp, avisando a cliente. A API precisa aceitar o endereço do site no CORS e usar HTTPS quando o site estiver em HTTPS.
 
 ## Publicar (grátis)
 

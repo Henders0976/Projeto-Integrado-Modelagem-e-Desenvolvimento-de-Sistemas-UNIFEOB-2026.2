@@ -39,10 +39,8 @@ class _AdminProdutoPageState extends State<AdminProdutoPage> {
   final _cores = [_CorForm()];
   bool _salvando = false;
 
-  late final List<String> _fotos = {
-    for (final p in widget.catalogo.todas()) ...p.fotos,
-  }.toList()
-    ..sort();
+  // Inclui as fotos das peças desativadas: o catálogo todo está desativado até a administradora ativar.
+  late final List<String> _fotos = widget.catalogo.fotos();
 
   @override
   void dispose() {

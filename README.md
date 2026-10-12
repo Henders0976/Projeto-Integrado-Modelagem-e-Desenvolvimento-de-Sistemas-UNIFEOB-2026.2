@@ -16,7 +16,7 @@ Pegue o `.zip` da versão mais recente em **[Releases](../../releases/latest)**.
 
 Funciona em Windows 10/11 de 64 bits (Intel/AMD); as bibliotecas do Visual C++ já vão no pacote. Como o app ainda não tem assinatura digital, o Windows pode avisar "O Windows protegeu o seu computador": clique em **Mais informações** e depois em **Executar assim mesmo**. No Windows edição "N", instale o *Media Feature Pack* da Microsoft.
 
-Sem o servidor (veja [Servidor e banco](#servidor-e-banco)) o app mostra o catálogo embutido, mas não registra pedidos e a área administrativa não abre.
+Sem o servidor (veja [Servidor e banco](#servidor-e-banco)) o app abre com a vitrine vazia (o catálogo embutido vem desativado), não registra pedidos e a área administrativa não abre.
 
 ## O que o app faz
 
@@ -28,7 +28,7 @@ Sem o servidor (veja [Servidor e banco](#servidor-e-banco)) o app mostra o catá
 - **Assistente de estilo com IA** (GenUI + Firebase AI Logic).
 - **Animações ligadas à rolagem** (scroll-linked, parallax nas fotos), **rolagem suave** com a roda do mouse e fundo líquido animado (shader).
 - Tela de **privacidade e termos** (LGPD).
-- O catálogo tem cópia embutida em `assets/catalogo.json` e as fotos ficam em `assets/fotos/`, então o app abre mesmo sem conexão.
+- O catálogo fica em `assets/catalogo.json` e as fotos em `assets/fotos/`. **Todas as peças vêm desativadas** (`"ativo": false`): quem decide o que aparece na loja é a administradora, pelo painel (veja [Catálogo desativado](#catálogo-desativado)).
 
 ## Como rodar (desenvolvimento)
 
@@ -58,7 +58,7 @@ Rotas que o app usa:
 
 | Rota | Quem usa | Para quê |
 |---|---|---|
-| `GET /produtos` | público | catálogo (se falhar, usa o `catalogo.json` embutido) |
+| `GET /produtos` | público | só as peças que a administradora ativou (se a API falhar, o app abre sem peças) |
 | `POST /pedidos` | público | registrar o pedido |
 | `GET /pedidos/:id?telefone=` | público | consultar o andamento (exige os dois dados) |
 | `POST /admin/login` | admin | entrar e receber o token |
@@ -67,6 +67,16 @@ Rotas que o app usa:
 | `GET /admin/pedidos`, `PATCH /admin/pedidos/:id` | admin | listar pedidos e mudar o status |
 
 **Acesso ao painel:** não há link para clientes. Segure o clique (ou o dedo) sobre a logo **RV·LABEL** na tela inicial. Não existe cadastro público de administrador: a conta é criada direto no banco pela equipe e a senha é guardada criptografada.
+
+## Catálogo desativado
+
+O catálogo de peças (`assets/catalogo.json`, 15 peças da coleção Essence) está no repositório, mas **todo desativado**, para que a administradora tenha o controle total da loja.
+
+- **Banco:** `npm run seed` (em `api/`) importa as peças com `ativo = 0`. Importar de novo nunca liga nem desliga o que já existe, então a escolha dela fica preservada.
+- **No app:** a loja só mostra o que a administradora ativou no painel (o interruptor de cada produto). Depois de ativar uma peça, reabra o app para ela aparecer.
+- **Sem a API** (fora do ar ou sem servidor), o app e o site abrem com a vitrine vazia, porque o `catalogo.json` embutido vem desativado.
+- **Ligar uma peça direto no arquivo** (por exemplo, num site estático, sem API): troque `"ativo": false` por `true` (ou apague o campo) nessa peça e, para o site, rode `npm run sync` dentro de `site/`.
+- Produtos cadastrados pelo painel já nascem ativos. As fotos das peças desativadas continuam disponíveis no formulário de novo produto.
 
 ## Assistente de IA (Firebase)
 

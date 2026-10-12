@@ -36,6 +36,8 @@ export default function Home() {
   const destaque = comFoto.find((p) => p.id === "essence-005") ?? comFoto[0];
   const destaques = comFoto.filter((p) => p.id !== destaque?.id).slice(0, 3);
   const fotoApoio = comFoto[comFoto.length - 1]?.fotos[0];
+  // Catálogo carregado e sem nenhuma peça ativa (a administradora ainda não ligou nenhuma): a Home não promete peças.
+  const semPecas = !carregando && !erro && pecas.length === 0;
 
   return (
     <>
@@ -103,11 +105,15 @@ export default function Home() {
           <div className="flex items-end justify-between gap-4">
             <div>
               <h2 id="destaques-titulo" className="text-[34px]">A coleção Essence</h2>
-              <p className="mt-2.5 text-suave">Toque numa peça pra abrir em detalhe, virar a foto e escolher a cor.</p>
+              <p className="mt-2.5 text-suave">
+                {semPecas ? "Em breve, peças novas por aqui." : "Toque numa peça pra abrir em detalhe, virar a foto e escolher a cor."}
+              </p>
             </div>
-            <Link to="/loja" className="hidden items-center gap-2 text-sm underline-offset-4 hover:underline sm:flex">
-              Ver todas <ArrowRight className="h-4 w-4" aria-hidden />
-            </Link>
+            {!semPecas && (
+              <Link to="/loja" className="hidden items-center gap-2 text-sm underline-offset-4 hover:underline sm:flex">
+                Ver todas <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+            )}
           </div>
         </AoRolar>
         {carregando && <p className="mt-10 text-suave">Carregando a coleção…</p>}
@@ -119,21 +125,25 @@ export default function Home() {
             </AoRolar>
           ))}
         </div>
-        <div className="mt-10 sm:hidden">
-          <Link to="/loja" className="btn-contorno w-full">Ver todas as peças</Link>
-        </div>
+        {!semPecas && (
+          <div className="mt-10 sm:hidden">
+            <Link to="/loja" className="btn-contorno w-full">Ver todas as peças</Link>
+          </div>
+        )}
       </section>
 
-      {/* Coleções */}
-      <section className="mx-auto max-w-[1100px] px-6 pt-28" aria-label="Coleções">
-        <div className="grid gap-3 md:grid-cols-2">
-          {COLECOES.map((c, i) => (
-            <AoRolar key={c.slug} dy={96} escalonar={i * 0.12}>
-              <CartaoColecao colecao={c} foto={primeiraFoto(pecasDaColecao(c, pecas))} />
-            </AoRolar>
-          ))}
-        </div>
-      </section>
+      {/* Coleções: os cartões usam a foto de uma peça, então só aparecem quando há peça ativa. */}
+      {!semPecas && (
+        <section className="mx-auto max-w-[1100px] px-6 pt-28" aria-label="Coleções">
+          <div className="grid gap-3 md:grid-cols-2">
+            {COLECOES.map((c, i) => (
+              <AoRolar key={c.slug} dy={96} escalonar={i * 0.12}>
+                <CartaoColecao colecao={c} foto={primeiraFoto(pecasDaColecao(c, pecas))} />
+              </AoRolar>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Sobre */}
       <section className="mx-auto max-w-[1100px] px-6 pt-28" aria-labelledby="sobre-titulo">

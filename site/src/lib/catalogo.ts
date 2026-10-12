@@ -80,12 +80,17 @@ function normalizarPeca(j: Record<string, unknown>): Peca {
   };
 }
 
-/** Monta o catálogo a partir do JSON. Peça inválida (ex.: categoria desconhecida) é ignorada, não derruba o site. */
+/**
+ * Monta o catálogo a partir do JSON. Peça inválida (ex.: categoria desconhecida) é ignorada, não derruba o site.
+ * Peça com `"ativo": false` também fica de fora: o catalogo.json vem todo desativado, e a API só devolve o que
+ * a administradora ativou (sem o campo, vale como ativa).
+ */
 export function normalizarCatalogo(dados: unknown): Peca[] {
   const lista = dados && typeof dados === "object" ? (dados as { pecas?: unknown }).pecas : null;
   if (!Array.isArray(lista)) throw new Error("catálogo inválido: falta a lista 'pecas'");
   const pecas: Peca[] = [];
   for (const p of lista) {
+    if ((p as { ativo?: unknown })?.ativo === false) continue;
     try {
       pecas.push(normalizarPeca(p as Record<string, unknown>));
     } catch (e) {

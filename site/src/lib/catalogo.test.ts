@@ -40,6 +40,11 @@ describe("catálogo", () => {
     aviso.mockRestore();
   });
 
+  it("peça com ativo=false fica fora da loja; sem o campo vale como ativa", () => {
+    const pecas = normalizarCatalogo({ pecas: [peca({ id: "a" }), peca({ id: "b", ativo: false }), peca({ id: "c", ativo: true })] });
+    expect(pecas.map((p) => p.id)).toEqual(["a", "c"]);
+  });
+
   it("rejeita JSON sem a lista de peças", () => {
     expect(() => normalizarCatalogo({})).toThrow();
     expect(() => normalizarCatalogo(null)).toThrow();

@@ -42,6 +42,12 @@ O fundo líquido, o efeito de rolagem, a barra de vidro e as entradas de seção
 
 O assistente usa GenUI e o Firebase. Se o Firebase não estiver configurado, o app abre normalmente e o assistente aparece como indisponível. Por isso o repositório não traz chaves reais, e o README explica como colocar as suas.
 
+## Catálogo desativado por padrão
+
+O catálogo (`assets/catalogo.json`) fica no repositório com todas as peças em `"ativo": false`. A administradora tem o controle total da loja: só aparece o que ela ativa no painel. O `seed.js` grava `ativo = 0` ao importar e nunca mexe em quem já existe, para não desfazer a escolha dela.
+
+Consequência aceita: sem a API (fora do ar ou ainda não configurada), o app e o site abrem com a vitrine vazia, em vez de mostrar o catálogo embutido por cima da decisão da administradora. As fotos das peças desativadas continuam disponíveis no formulário de novo produto.
+
 ## Segredos fora do repositório
 
 O número de WhatsApp da loja e as chaves do Firebase ficam só na máquina de quem roda o app. No repositório entram valores de exemplo.

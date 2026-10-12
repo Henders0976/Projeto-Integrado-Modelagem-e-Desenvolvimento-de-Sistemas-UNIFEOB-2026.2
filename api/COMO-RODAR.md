@@ -3,7 +3,7 @@
 ## Subir
 1. No MySQL Workbench, abra `schema.sql` e execute. Só cria o que falta.
 2. Copie `.env.example` para `.env` e preencha `DB_USER`, `DB_PASSWORD` e `JWT_SECRET` (texto aleatório com 48+ caracteres).
-3. `npm install`, depois `npm run seed` (importa o `catalogo.json`) e `npm start`.
+3. `npm install`, depois `npm run seed` (importa o `catalogo.json` **todo desativado**: a loja fica vazia até a administradora ativar as peças no painel) e `npm start`.
 4. Defina a senha da administradora: `npm run admin -- admin@rvlabel.com.br "uma senha com 8+ caracteres"`.
 5. No app: `flutter run` (web/desktop) ou `flutter run --dart-define=API_URL=http://10.0.2.2:3000` (emulador Android). Celular físico: use o IP do PC na rede.
 
