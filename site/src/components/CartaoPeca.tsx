@@ -1,15 +1,29 @@
 import { ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useViewTransitionState } from "react-router-dom";
 import { precoTexto, type Peca } from "@/lib/catalogo";
 import { formatarReais } from "@/lib/formato";
 import FotoPeca from "./FotoPeca";
 
-/** Cartão da vitrine: a foto dá zoom no hover, aparece "Ver peça" e as cores aparecem como bolinhas. */
-export default function CartaoPeca({ peca }: { peca: Peca }) {
+/**
+ * Cartão da vitrine: a foto dá zoom no hover, aparece "Ver peça" e as cores aparecem como bolinhas.
+ * Ao abrir a peça a foto "voa" até a página dela (View Transitions; onde o navegador não tem, só troca de página).
+ * `transicao={false}` desliga isso (cartões dentro da própria página de uma peça: dois "foto-peca" na tela anulam a transição).
+ */
+export default function CartaoPeca({ peca, transicao = true }: { peca: Peca; transicao?: boolean }) {
   const foto = peca.fotos[0];
+  const destino = `/peca/${peca.id}`;
+  const voando = useViewTransitionState(destino);
   return (
-    <Link to={`/peca/${peca.id}`} className="group block" aria-label={`${peca.nome}, ${precoTexto(peca, formatarReais)}`}>
-      <div className="relative aspect-[4/5] overflow-hidden rounded shadow-[0_6px_14px_rgba(0,0,0,0.16)] transition duration-300 group-hover:-translate-y-1.5 group-hover:shadow-[0_16px_30px_rgba(0,0,0,0.45)]">
+    <Link
+      to={destino}
+      viewTransition={transicao}
+      className="group block"
+      aria-label={`${peca.nome}, ${precoTexto(peca, formatarReais)}`}
+    >
+      <div
+        className="relative aspect-[4/5] overflow-hidden rounded shadow-[0_6px_14px_rgba(0,0,0,0.16)] transition duration-300 group-hover:-translate-y-1.5 group-hover:shadow-[0_16px_30px_rgba(0,0,0,0.45)]"
+        style={transicao && voando ? { viewTransitionName: "foto-peca" } : undefined}
+      >
         <FotoPeca
           src={foto}
           cor={peca.cores[0]}

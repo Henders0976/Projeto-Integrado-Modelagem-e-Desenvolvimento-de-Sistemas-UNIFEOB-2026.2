@@ -95,6 +95,17 @@
   animation-delay: var(--atraso, 0ms);
 }
 
+/* Foto que aparece com um fade quando termina de carregar (FotoPeca), em vez de "pipocar". */
+.foto-img {
+  transition: opacity 0.45s ease;
+}
+
+/* Foto do cartão "voa" até a página da peça (Hero do app); a duração e a curva da transição entre páginas. */
+::view-transition-group(foto-peca) {
+  animation-duration: 0.55s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* Faixa de texto que corre sem parar (o conteúdo vem duplicado, por isso -50%). */
 @keyframes faixa {
   to {
@@ -112,6 +123,14 @@
   }
   .intro,
   .faixa {
+    animation: none;
+  }
+  .foto-img {
+    transition: none;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
     animation: none;
   }
 }

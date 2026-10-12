@@ -72,8 +72,12 @@ export default function Peca() {
 
         <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-14">
           <div>
-            <div className="aspect-[4/5] overflow-hidden rounded shadow-[0_16px_30px_rgba(0,0,0,0.35)]">
-              <FotoPeca src={foto} cor={cor} alt={`${peca.nome}, ${lado}`} loading="eager" className="h-full w-full" posicao="50% 10%" />
+            {/* 3:4 e enquadramento do app (peca_page.dart): a foto inteira, sem cortar. O nome liga com o do cartão (Hero). */}
+            <div
+              className="aspect-[3/4] overflow-hidden rounded shadow-[0_16px_30px_rgba(0,0,0,0.35)]"
+              style={{ viewTransitionName: "foto-peca" }}
+            >
+              <FotoPeca src={foto} cor={cor} alt={`${peca.nome}, ${lado}`} loading="eager" className="h-full w-full" posicao="50% 25%" />
             </div>
             {peca.fotoCostas && (
               <div className="mt-3 flex gap-2" role="group" aria-label="Lado da peça">
@@ -128,7 +132,7 @@ export default function Peca() {
           <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3">
             {parecidas.map((p, i) => (
               <AoRolar key={p.id} escalonar={i * 0.1}>
-                <CartaoPeca peca={p} />
+                <CartaoPeca peca={p} transicao={false} />
               </AoRolar>
             ))}
           </div>
