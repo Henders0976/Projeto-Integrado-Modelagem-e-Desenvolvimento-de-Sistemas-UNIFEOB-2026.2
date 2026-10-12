@@ -14,8 +14,13 @@ abstract class CatalogoRepository {
   List<Produto> porCategoria(Categoria? categoria);
   Produto? buscarPorId(String id);
 
-  /// Lê o catálogo da API (MySQL). Se a API estiver fora do ar, cai para
-  /// assets/catalogo.json para o app continuar funcionando.
+  /// Fotos de todas as peças do catálogo, inclusive as desativadas: é entre elas que
+  /// a administradora escolhe ao cadastrar um produto novo.
+  List<String> fotos();
+
+  /// Lê o catálogo da API (MySQL), que só devolve o que a administradora ativou. Se a API
+  /// estiver fora do ar, cai para assets/catalogo.json, cujas peças vêm desativadas
+  /// (`"ativo": false`): sem a API a vitrine fica vazia, e quem decide o que aparece é a administradora.
   static Future<CatalogoRepository> carregar() async {
     Map<String, dynamic> dados;
     try {
@@ -30,22 +35,30 @@ abstract class CatalogoRepository {
 
   /// Monta o catálogo a partir do JSON. Uma peça com dado inválido (por exemplo,
   /// categoria que o app não conhece) é ignorada em vez de derrubar o app inteiro.
+  /// Peça com `"ativo": false` fica fora da vitrine, mas suas fotos continuam em [fotos].
   static CatalogoRepository deJson(Map<String, dynamic> dados) {
     final produtos = <Produto>[];
+    final fotos = <String>{};
     for (final p in dados['pecas'] as List) {
       try {
-        produtos.add(Produto.fromJson(p as Map<String, dynamic>));
+        final peca = Produto.fromJson(p as Map<String, dynamic>);
+        fotos.addAll(peca.fotos);
+        if (p['ativo'] != false) produtos.add(peca);
       } catch (e) {
         debugPrint('Peça ignorada (${p is Map ? p['id'] : p}): $e');
       }
     }
-    return _CatalogoJson._(produtos);
+    return _CatalogoJson._(produtos, fotos);
   }
 }
 
 class _CatalogoJson implements CatalogoRepository {
-  _CatalogoJson._(this._produtos);
+  _CatalogoJson._(this._produtos, this._fotos);
   final List<Produto> _produtos;
+  final Set<String> _fotos;
+
+  @override
+  List<String> fotos() => _fotos.toList()..sort();
 
   @override
   List<Produto> todas() => List.unmodifiable(_produtos);

@@ -40,6 +40,11 @@ describe("catálogo", () => {
     aviso.mockRestore();
   });
 
+  it("mostra a peça mesmo com ativo=false no JSON: esse campo é só do app, o site mostra o catálogo inteiro", () => {
+    const pecas = normalizarCatalogo({ pecas: [peca({ id: "a", ativo: false }), peca({ id: "b" })] });
+    expect(pecas.map((p) => p.id)).toEqual(["a", "b"]);
+  });
+
   it("rejeita JSON sem a lista de peças", () => {
     expect(() => normalizarCatalogo({})).toThrow();
     expect(() => normalizarCatalogo(null)).toThrow();

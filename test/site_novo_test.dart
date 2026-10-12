@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -77,6 +80,28 @@ void main() {
       ],
     });
     expect(catalogo.todas().map((p) => p.id), ['ok-1']);
+  });
+
+  test('peça com ativo=false fica fora da vitrine, mas a foto continua disponível', () {
+    final catalogo = CatalogoRepository.deJson({
+      'pecas': [
+        {'id': 'a', 'nome': 'Blusa', 'categoria': 'blusas', 'preco': 10.0, 'fotos': ['assets/fotos/a.jpg']},
+        {'id': 'b', 'nome': 'Top', 'categoria': 'tops', 'preco': 20.0, 'ativo': false, 'fotos': ['assets/fotos/b.jpg']},
+      ],
+    });
+    expect(catalogo.todas().map((p) => p.id), ['a']); // sem "ativo" = ativa (é o formato da API)
+    expect(catalogo.buscarPorId('b'), isNull);
+    expect(catalogo.fotos(), ['assets/fotos/a.jpg', 'assets/fotos/b.jpg']);
+  });
+
+  test('o catálogo embutido vem todo desativado: quem decide o que aparece é a administradora', () {
+    final bruto = jsonDecode(File('assets/catalogo.json').readAsStringSync()) as Map<String, dynamic>;
+    final pecas = bruto['pecas'] as List;
+    expect(pecas, isNotEmpty);
+    expect(pecas.every((p) => p['ativo'] == false), isTrue);
+    final catalogo = CatalogoRepository.deJson(bruto);
+    expect(catalogo.todas(), isEmpty);
+    expect(catalogo.fotos(), isNotEmpty); // o formulário de novo produto continua com fotos para escolher
   });
 
   test('toda categoria do catálogo cai em alguma coleção', () {

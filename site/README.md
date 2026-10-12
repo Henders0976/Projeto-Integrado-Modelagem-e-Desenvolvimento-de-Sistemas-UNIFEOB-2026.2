@@ -56,6 +56,7 @@ scripts/       sync-assets.mjs
 
 ## Limites conhecidos
 
+- **Catálogo:** o campo `"ativo"` do `catalogo.json` vale só para o app (lá o catálogo vem desativado). O site ignora esse campo e mostra o catálogo inteiro; só com `VITE_API_URL` ele mostra o que a administradora ativou.
 - **Novidades** e **Contato** não têm servidor de e-mail: a mensagem segue pelo WhatsApp da marca.
 - **Fundo:** é um degradê em CSS, não o shader animado do app.
 - **Área administrativa** não existe no site (fica só no app).

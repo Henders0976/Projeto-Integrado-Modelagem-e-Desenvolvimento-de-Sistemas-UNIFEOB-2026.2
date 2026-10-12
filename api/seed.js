@@ -30,14 +30,16 @@ const upsertId = async (con, sql, params, idCol) => {
       const idCategoria = await upsertId(con,
         'INSERT INTO categoria (nome, id_admin) VALUES (?, ?)', [p.categoria, admin], 'id_categoria');
 
+      // "ativo" só vale na primeira importação (o catálogo vem desativado: a administradora liga o que quiser).
+      // Quem já existe NÃO é mexido aqui, para rodar o seed de novo nunca desfazer a escolha dela.
       const [r] = await con.query(
-        `INSERT INTO produto (codigo, tipo, nome, descricao, preco, material, id_categoria, id_admin)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO produto (codigo, tipo, nome, descricao, preco, material, ativo, id_categoria, id_admin)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE id_produto = LAST_INSERT_ID(id_produto), tipo=VALUES(tipo),
            nome=VALUES(nome), descricao=VALUES(descricao), preco=VALUES(preco),
            material=VALUES(material), id_categoria=VALUES(id_categoria)`,
         [p.id, acessorio ? 'acessorio' : 'peca', p.nome, p.descricao ?? '', p.preco ?? null,
-         p.material ?? null, idCategoria, admin]);
+         p.material ?? null, p.ativo === false ? 0 : 1, idCategoria, admin]);
       const idProduto = r.insertId;
 
       // Mesmos padrões do Produto.fromJson do app.

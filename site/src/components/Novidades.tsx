@@ -23,9 +23,12 @@ export default function Novidades({ foto }: { foto?: string }) {
 
   return (
     <section className="relative isolate overflow-hidden" aria-labelledby="novidades-titulo">
-      <ParallaxFoto className="absolute inset-0 -z-10" intensidade={50} escala={1.3}>
-        <FotoPeca src={foto} alt="" posicao="50% 30%" className="h-full w-full" />
-      </ParallaxFoto>
+      {/* Sem foto (loja sem peças ativas) não há o que mostrar: nada de "Foto em breve" atrás do texto. */}
+      {foto && (
+        <ParallaxFoto className="absolute inset-0 -z-10" intensidade={50} escala={1.3}>
+          <FotoPeca src={foto} alt="" posicao="50% 30%" className="h-full w-full" />
+        </ParallaxFoto>
+      )}
       <div className="absolute inset-0 -z-10 bg-black/60" />
       <div className="mx-auto max-w-md px-6 py-24 text-center">
         <h2 id="novidades-titulo" className="text-[34px] leading-tight">Novidades RV</h2>
