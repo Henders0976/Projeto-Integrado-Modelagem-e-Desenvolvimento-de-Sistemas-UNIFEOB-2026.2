@@ -4,7 +4,16 @@ const db = require('./db');
 const { router: adminRouter, itensSql } = require('./admin');
 
 const app = express();
-app.use(cors());
+
+// CORS só importa para navegador (site e app web). CORS_ORIGIN = origens permitidas, separadas por vírgula.
+// Sem ela: aberto para desenvolvimento, mas fechado quando NODE_ENV=production.
+const origens = (process.env.CORS_ORIGIN ?? '').split(',').map((o) => o.trim()).filter(Boolean);
+app.use(cors({ origin: origens.length ? origens : process.env.NODE_ENV !== 'production' }));
+if (!origens.length) {
+  console.warn(process.env.NODE_ENV === 'production'
+    ? 'CORS_ORIGIN vazio em produção: navegadores de outros sites não conseguem chamar a API.'
+    : 'CORS aberto (CORS_ORIGIN vazio). Defina CORS_ORIGIN antes de hospedar.');
+}
 app.use(express.json());
 
 class Erro extends Error {
@@ -132,13 +141,13 @@ app.post('/pedidos', rota(async (req, res) => {
       linhas.push({ v, qtd });
     }
 
+    // Quem já é cliente (mesmo CPF ou telefone) só é reaproveitada: um pedido anônimo nunca reescreve os dados dela
+    // (senão bastava mandar o CPF dela com outro telefone para passar a ver os pedidos dela).
+    // O nome e o telefone informados ficam no próprio pedido, e é por eles que a consulta autoriza.
     const [[ex]] = await con.query(
       `SELECT id_cliente FROM cliente WHERE ${cpf ? 'cpf' : 'telefone'} = ? LIMIT 1`, [cpf ?? telefone]);
-    let clienteId;
-    if (ex) {
-      clienteId = ex.id_cliente;
-      await con.query('UPDATE cliente SET nome = ?, telefone = ? WHERE id_cliente = ?', [nome, telefone, clienteId]);
-    } else {
+    let clienteId = ex?.id_cliente;
+    if (!clienteId) {
       [{ insertId: clienteId }] = await con.query(
         'INSERT INTO cliente (nome, telefone, cpf) VALUES (?, ?, ?)', [nome, telefone, cpf]);
     }
@@ -148,8 +157,8 @@ app.post('/pedidos', rota(async (req, res) => {
     const total = centavos(linhas.reduce((s, l) => s + (subtotal(l) ?? 0), 0));
     const pendente = linhas.some((l) => l.v.preco == null);
     const [{ insertId: pedidoId }] = await con.query(
-      'INSERT INTO pedido (id_cliente, valor_total, preco_pendente) VALUES (?, ?, ?)',
-      [clienteId, total, pendente ? 1 : 0]);
+      'INSERT INTO pedido (id_cliente, nome_comprador, telefone, valor_total, preco_pendente) VALUES (?, ?, ?, ?, ?)',
+      [clienteId, nome, telefone, total, pendente ? 1 : 0]);
     for (const l of linhas) {
       await con.query(
         `INSERT INTO item_pedido (id_pedido, id_produto, id_cor, id_tamanho, quantidade, preco_unitario, subtotal)
@@ -167,13 +176,14 @@ app.post('/pedidos', rota(async (req, res) => {
   }
 }));
 
-// Consulta do cliente: precisa do número do pedido E do telefone usado nele (um sem o outro não revela nada).
+// Consulta do cliente: precisa do número do pedido E do telefone informado nele (um sem o outro não revela nada).
+// Compara com o telefone gravado no pedido, que ninguém consegue trocar depois por outro pedido.
 app.get('/pedidos/:id', rota(async (req, res) => {
   const telefone = String(req.query.telefone ?? '').replace(/\D/g, '');
   const [[p]] = await db.query(
     `SELECT pe.id_pedido AS id, pe.data_pedido AS data, pe.status, pe.valor_total AS total, pe.preco_pendente AS precoPendente
-     FROM pedido pe JOIN cliente cl ON cl.id_cliente = pe.id_cliente
-     WHERE pe.id_pedido = ? AND cl.telefone = ?`, [req.params.id, telefone]);
+     FROM pedido pe
+     WHERE pe.id_pedido = ? AND pe.telefone = ?`, [req.params.id, telefone]);
   if (!p) throw new Erro(404, 'Pedido não encontrado. Confira o número e o telefone.');
   const [itens] = await db.query(itensSql('WHERE ip.id_pedido = ?'), [p.id]);
   res.json({ ...p, precoPendente: !!p.precoPendente, itens });

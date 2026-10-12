@@ -7,7 +7,16 @@ const db = require('./db');
 const { bcrypt } = require('./auth');
 
 const URL = process.env.API_URL || `http://localhost:${process.env.PORT || 3000}`;
+
+// Este teste escreve (e apaga) dados no banco do .env: não deixa rodar contra um servidor ou banco que não seja local.
+const local = (h) => ['localhost', '127.0.0.1', '[::1]', '::1'].includes(h);
+if ((!local(process.env.DB_HOST || 'localhost') || !local(new globalThis.URL(URL).hostname)) && process.env.TESTE_EM_BANCO_REMOTO !== 'sim') {
+  console.error('Recusado: o teste cria e apaga dados e o banco/API não são locais. Se for de propósito, rode com TESTE_EM_BANCO_REMOTO=sim.');
+  process.exit(1);
+}
+
 const EMAIL = 'teste-tmp@rvlabel.local', SENHA = 'senha-de-teste-123', COD = 'zz-teste-001', TEL = '35999990000';
+const CPF = '12345678909', TEL_OUTRO = '35988887777';
 let token, idAdmin, idPedido;
 
 const chama = async (metodo, caminho, corpo, auth = true) => {
@@ -21,8 +30,8 @@ const chama = async (metodo, caminho, corpo, auth = true) => {
 
 async function limpar() {
   await db.query('DELETE ip FROM item_pedido ip JOIN produto p ON p.id_produto = ip.id_produto WHERE p.codigo = ?', [COD]);
-  await db.query('DELETE pe FROM pedido pe JOIN cliente c ON c.id_cliente = pe.id_cliente WHERE c.telefone = ?', [TEL]);
-  await db.query('DELETE FROM cliente WHERE telefone = ?', [TEL]);
+  await db.query('DELETE pe FROM pedido pe JOIN cliente c ON c.id_cliente = pe.id_cliente WHERE c.telefone = ? OR c.cpf = ?', [TEL, CPF]);
+  await db.query('DELETE FROM cliente WHERE telefone = ? OR cpf = ?', [TEL, CPF]);
   await db.query('DELETE FROM produto WHERE codigo = ?', [COD]);
   await db.query("DELETE FROM categoria WHERE nome = 'Categoria Teste'");
   await db.query('DELETE FROM administrador WHERE email = ?', [EMAIL]);
@@ -74,6 +83,24 @@ test('cliente só vê o pedido com número + telefone certos', async () => {
   const ok = await chama('GET', `/pedidos/${idPedido}?telefone=${TEL}`, null, false);
   assert.equal(ok.status, 200);
   assert.equal(ok.json.status, 'Recebido');
+});
+
+test('quem usa o CPF de outra pessoa com outro telefone não passa a ver os pedidos dela', async () => {
+  // Tamanho M não tem controle de estoque, então não mexe no saldo que o teste de estoque confere.
+  const pedir = (comprador) => chama('POST', '/pedidos', { comprador, itens: [{ produtoId: COD, cor: 'Preto', tamanho: 'M', quantidade: 1 }] }, false);
+  const ver = (id, tel) => chama('GET', `/pedidos/${id}?telefone=${tel}`, null, false);
+
+  const dela = await pedir({ nome: 'Cliente Teste', telefone: TEL, cpf: CPF });
+  assert.equal(dela.status, 201);
+  const intruso = await pedir({ nome: 'Intruso', telefone: TEL_OUTRO, cpf: CPF });
+  assert.equal(intruso.status, 201);
+
+  assert.equal((await ver(dela.json.id, TEL_OUTRO)).status, 404); // o intruso não vê o pedido dela
+  assert.equal((await ver(dela.json.id, TEL)).status, 200); // ela continua vendo
+  assert.equal((await ver(intruso.json.id, TEL_OUTRO)).status, 200); // e cada um vê o próprio pedido
+
+  const [[cadastro]] = await db.query('SELECT nome, telefone FROM cliente WHERE cpf = ?', [CPF]);
+  assert.deepEqual({ ...cadastro }, { nome: 'Cliente Teste', telefone: TEL }); // o cadastro não foi reescrito
 });
 
 test('status do pedido muda e cancelar devolve o estoque', async () => {

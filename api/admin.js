@@ -142,8 +142,8 @@ r.put('/estoque', rota(async (req, res) => {
 r.get('/pedidos', rota(async (_req, res) => {
   const [peds] = await db.query(
     `SELECT pe.id_pedido AS id, pe.data_pedido AS data, pe.status, pe.valor_total AS total,
-            pe.preco_pendente AS precoPendente, cl.nome AS cliente, cl.telefone
-     FROM pedido pe JOIN cliente cl ON cl.id_cliente = pe.id_cliente ORDER BY pe.id_pedido DESC LIMIT 200`);
+            pe.preco_pendente AS precoPendente, pe.nome_comprador AS cliente, pe.telefone
+     FROM pedido pe ORDER BY pe.id_pedido DESC LIMIT 200`);
   const [itens] = await db.query(itensSql('WHERE ip.id_pedido IN (SELECT id_pedido FROM (SELECT id_pedido FROM pedido ORDER BY id_pedido DESC LIMIT 200) x)'));
   res.json(peds.map((p) => ({ ...p, precoPendente: !!p.precoPendente, itens: itens.filter((i) => i.pedido === p.id) })));
 }));

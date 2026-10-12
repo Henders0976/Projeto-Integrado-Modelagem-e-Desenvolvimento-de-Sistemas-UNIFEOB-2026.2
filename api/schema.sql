@@ -10,6 +10,8 @@
 --   variacao.quantidade_estoque  NULL = peça sem controle de estoque
 --   cliente.cpf               opcional; cliente.endereco aceita NULL
 --   pedido.preco_pendente     o pedido tem item sem preço
+--   pedido.nome_comprador/telefone  contato informado no pedido (consulta e painel leem daqui)
+-- Banco criado com uma versão anterior deste arquivo? Rode migracao-pedido-contato.sql uma vez.
 CREATE DATABASE IF NOT EXISTS Rv_Label CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE Rv_Label;
 
@@ -110,6 +112,8 @@ CREATE TABLE IF NOT EXISTS variacao (
 CREATE TABLE IF NOT EXISTS pedido (
   id_pedido      INT           NOT NULL AUTO_INCREMENT,
   id_cliente     INT           NOT NULL,
+  nome_comprador VARCHAR(120)  NOT NULL,            -- nome informado neste pedido (o cadastro da cliente não é reescrito)
+  telefone       VARCHAR(20)   NOT NULL,            -- só dígitos; é com ele que o cliente consulta o pedido
   data_pedido    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   status         ENUM('Recebido','Em separação','Enviado','Cancelado') NOT NULL DEFAULT 'Recebido',
   valor_total    DECIMAL(10,2) NOT NULL DEFAULT 0,
