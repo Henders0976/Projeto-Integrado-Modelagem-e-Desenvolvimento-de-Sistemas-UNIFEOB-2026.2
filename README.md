@@ -45,7 +45,7 @@ Só com isso o app já abre. O Assistente de IA e a parte do servidor são opcio
 
 ## Servidor e banco
 
-Pedidos, "Meus pedidos", o login e o painel administrativo conversam com uma API Node.js + MySQL (banco `Rv_Label`). **A pasta `api/` não faz parte deste repositório** (fica só na máquina local, como diz o `.gitignore`), e as credenciais e o `.env` nunca são versionados.
+Pedidos, "Meus pedidos", o login e o painel administrativo conversam com uma API Node.js + MySQL (banco `Rv_Label`). O código dessa API está na pasta [`api/`](api/), mas **as credenciais e o `.env` nunca são versionados**: copie `api/.env.example` para `api/.env` e preencha `DB_USER`, `DB_PASSWORD` e `JWT_SECRET` (um texto aleatório com 48+ caracteres). O passo a passo (criar o banco, popular o catálogo e definir a senha da administradora) está em [`api/COMO-RODAR.md`](api/COMO-RODAR.md).
 
 O app procura a API em `http://localhost:3000`. Para outro endereço:
 
