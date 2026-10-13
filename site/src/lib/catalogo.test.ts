@@ -67,3 +67,23 @@ describe("coleções", () => {
     expect(primeiraFoto([])).toBeUndefined();
   });
 });
+
+describe("origem do catálogo", () => {
+  it("com a API configurada, a vitrine continua vindo do catalogo.json (a API só devolve o que está ativo)", async () => {
+    vi.resetModules();
+    vi.stubEnv("VITE_API_URL", "http://localhost:3000");
+    const pedidos: string[] = [];
+    vi.stubGlobal("fetch", async (url: string) => {
+      pedidos.push(String(url));
+      return new Response(JSON.stringify({ pecas: [peca({ id: "so-no-json" })] }));
+    });
+    const { carregarCatalogo } = await import("./catalogo");
+    const pecas = await carregarCatalogo();
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    expect(pecas.map((p) => p.id)).toEqual(["so-no-json"]);
+    expect(pedidos).toHaveLength(1);
+    expect(pedidos[0]).toMatch(/catalogo\.json$/);
+    expect(pedidos.some((u) => u.includes("localhost:3000"))).toBe(false);
+  });
+});
