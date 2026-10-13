@@ -2,8 +2,29 @@ const express = require('express');
 const cors = require('cors');
 const db = require('./db');
 const { router: adminRouter, itensSql } = require('./admin');
+const { criarLimite } = require('./limite');
 
 const app = express();
+
+// Atrás de um proxy (Nginx, Render, Railway...) o IP real vem em X-Forwarded-For. TRUST_PROXY = quantos proxies ficam
+// entre o cliente e esta API (normalmente 1). Valor errado deixa o cliente forjar o IP e fugir dos limites abaixo.
+const proxies = parseInt(process.env.TRUST_PROXY ?? '', 10);
+if (proxies > 0) app.set('trust proxy', proxies);
+app.disable('x-powered-by');
+app.use((_req, res, next) => {
+  res.set('X-Content-Type-Options', 'nosniff');
+  next();
+});
+// Pedido e painel têm dado pessoal: nenhum navegador ou proxy deve guardar a resposta.
+app.use(['/pedidos', '/admin'], (_req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
+
+// Rotas públicas de pedido: sem limite, um script enche o banco de pedidos falsos, zera o estoque ou testa
+// telefones até achar o de uma cliente.
+const limitePedir = criarLimite({ janelaMs: 10 * 60_000, max: 20 });
+const limiteConsultar = criarLimite({ janelaMs: 10 * 60_000, max: 30 });
 
 // CORS só importa para navegador (site e app web). CORS_ORIGIN = origens permitidas, separadas por vírgula.
 // Sem ela: aberto para desenvolvimento, mas fechado quando NODE_ENV=production.
@@ -100,16 +121,18 @@ app.get('/estoque', rota(async (_req, res) => {
 
 // Body: { comprador:{nome,telefone,cpf?}, itens:[{produtoId,cor,tamanho,quantidade}] }
 // O preço vem do banco, nunca do app.
-app.post('/pedidos', rota(async (req, res) => {
+app.post('/pedidos', limitePedir, rota(async (req, res) => {
   const { comprador = {}, itens } = req.body ?? {};
   const nome = String(comprador.nome ?? '').trim();
   const telefone = String(comprador.telefone ?? '').replace(/\D/g, '');
   const cpf = String(comprador.cpf ?? '').replace(/\D/g, '') || null;
 
   if (!nome) throw new Erro(400, 'Informe o nome.');
+  if (nome.length > 120) throw new Erro(400, 'Nome muito longo (máximo 120 caracteres).');
   if (telefone.length < 10 || telefone.length > 13) throw new Erro(400, 'Telefone inválido.');
   if (cpf && cpf.length !== 11) throw new Erro(400, 'CPF inválido.');
   if (!Array.isArray(itens) || itens.length === 0) throw new Erro(400, 'Sacola vazia.');
+  if (itens.length > 50) throw new Erro(400, 'Itens demais em um só pedido (máximo 50).');
 
   const con = await db.getConnection();
   try {
@@ -118,7 +141,7 @@ app.post('/pedidos', rota(async (req, res) => {
     const linhas = [];
     for (const i of itens) {
       const qtd = Number(i.quantidade);
-      if (!Number.isInteger(qtd) || qtd < 1) throw new Erro(400, 'Quantidade inválida.');
+      if (!Number.isInteger(qtd) || qtd < 1 || qtd > 99) throw new Erro(400, 'Quantidade inválida.');
       // A variação (produto + cor + tamanho) tem que existir; trava só a linha dela.
       const [[v]] = await con.query(
         `SELECT p.id_produto, p.nome, p.preco, v.id_cor, v.id_tamanho, v.quantidade_estoque
@@ -129,7 +152,11 @@ app.post('/pedidos', rota(async (req, res) => {
          WHERE p.codigo = ? AND p.ativo = 1
          FOR UPDATE OF v`,
         [i.cor, i.tamanho, i.produtoId]);
-      if (!v) throw new Erro(400, `Peça indisponível: ${i.produtoId} (${i.cor}, ${i.tamanho}).`);
+      if (!v) {
+        // Peça desativada, ou cor/tamanho que ela não tem: a cliente reconhece o nome, não o código interno.
+        const [[p]] = await con.query('SELECT nome FROM produto WHERE codigo = ?', [i.produtoId]);
+        throw new Erro(400, `Peça indisponível: ${p?.nome ?? 'item da sacola'} (${i.cor}, ${i.tamanho}).`);
+      }
 
       if (v.quantidade_estoque != null) {
         if (v.quantidade_estoque < qtd) throw new Erro(409, `Sem estoque: ${v.nome} (${i.cor}, ${i.tamanho}).`);
@@ -178,7 +205,7 @@ app.post('/pedidos', rota(async (req, res) => {
 
 // Consulta do cliente: precisa do número do pedido E do telefone informado nele (um sem o outro não revela nada).
 // Compara com o telefone gravado no pedido, que ninguém consegue trocar depois por outro pedido.
-app.get('/pedidos/:id', rota(async (req, res) => {
+app.get('/pedidos/:id', limiteConsultar, rota(async (req, res) => {
   const telefone = String(req.query.telefone ?? '').replace(/\D/g, '');
   const [[p]] = await db.query(
     `SELECT pe.id_pedido AS id, pe.data_pedido AS data, pe.status, pe.valor_total AS total, pe.preco_pendente AS precoPendente
@@ -188,6 +215,17 @@ app.get('/pedidos/:id', rota(async (req, res) => {
   const [itens] = await db.query(itensSql('WHERE ip.id_pedido = ?'), [p.id]);
   res.json({ ...p, precoPendente: !!p.precoPendente, itens });
 }));
+
+// Para o monitor de disponibilidade da hospedagem: 200 se a API alcança o banco, 503 se não. Não expõe dado nenhum.
+app.get('/saude', async (_req, res) => {
+  try {
+    await db.query('SELECT 1');
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('saude:', e.code || e.message);
+    res.status(503).json({ ok: false });
+  }
+});
 
 app.use('/admin', adminRouter);
 
