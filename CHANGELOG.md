@@ -31,6 +31,11 @@ Segue o formato do [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ### App
 - O catálogo vem todo desativado: a administradora decide o que aparece no app pelo painel.
+- O app ganhou as mesmas peças de interface que o site já tinha: vitrine em lista com a foto ao passar o mouse (com
+  alternância Vitrine | Grade), índice por categoria ("Tudo o que a Essence tem hoje"), guia "Antes de escolher",
+  "Você também pode gostar" na página da peça e a linha de tinta animada no cabeçalho.
+- Diferença conhecida: no site, abrir uma peça da vitrine abre um detalhe em tela cheia com a foto se expandindo; no app,
+  abre a página da peça, com a foto voando do cartão (Hero) até ela.
 
 ### Projeto
 - CI no GitHub Actions: testes do site, da API (com MySQL) e do app em todo PR.

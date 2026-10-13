@@ -540,35 +540,46 @@ class _HomePageState extends State<HomePage> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 72, 24, 0),
             child: AoRolar(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('A coleção Essence',
-                            style: Theme.of(context).textTheme.headlineMedium),
-                        const SizedBox(height: 10),
-                        const Text(
-                            'Toque numa peça pra abrir em detalhe, virar a foto e '
-                            'escolher a cor. Filtre por categoria logo abaixo.',
-                            style: TextStyle(color: corTextoSuave, fontSize: 16)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    child: Text('$quantidade ${quantidade == 1 ? 'peça' : 'peças'}',
-                        key: ValueKey(quantidade),
-                        style: const TextStyle(
-                            color: corTextoSuave, fontFeatures: _numerosAlinhados)),
-                  ),
-                  const SizedBox(width: 16),
-                  _modo(),
-                ],
-              ),
+              child: LayoutBuilder(builder: (context, caixa) {
+                final textos = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('A coleção Essence',
+                        style: Theme.of(context).textTheme.headlineMedium),
+                    const SizedBox(height: 10),
+                    const Text(
+                        'Toque numa peça pra abrir em detalhe, virar a foto e '
+                        'escolher a cor. Filtre por categoria logo abaixo.',
+                        style: TextStyle(color: corTextoSuave, fontSize: 16)),
+                  ],
+                );
+                final contagem = AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: Text('$quantidade ${quantidade == 1 ? 'peça' : 'peças'}',
+                      key: ValueKey(quantidade),
+                      style: const TextStyle(
+                          color: corTextoSuave, fontFeatures: _numerosAlinhados)),
+                );
+                // No celular a contagem e os botões ficam numa linha própria: lado a lado com o texto,
+                // o título se espremia em três linhas.
+                if (caixa.maxWidth < 600) {
+                  return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    textos,
+                    const SizedBox(height: 16),
+                    Row(children: [contagem, const Spacer(), _modo()]),
+                  ]);
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(child: textos),
+                    const SizedBox(width: 16),
+                    contagem,
+                    const SizedBox(width: 16),
+                    _modo(),
+                  ],
+                );
+              }),
             ),
           ),
         ),

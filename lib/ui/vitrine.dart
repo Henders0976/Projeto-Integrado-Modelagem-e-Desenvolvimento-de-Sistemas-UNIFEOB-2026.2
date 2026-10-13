@@ -78,6 +78,7 @@ class _VitrineState extends State<Vitrine> {
   @override
   Widget build(BuildContext context) {
     if (widget.pecas.isEmpty) return const SizedBox.shrink();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _medir());
     return LayoutBuilder(builder: (context, caixa) {
       if (caixa.maxWidth < 760) {
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -92,8 +93,8 @@ class _VitrineState extends State<Vitrine> {
           width: larguraJanela,
           child: ValueListenableBuilder<double>(
             valueListenable: widget.rolagem,
-            builder: (_, __, ___) => Transform.translate(
-              offset: Offset(0, _deslocamento(larguraJanela * 5 / 4)),
+            builder: (_, y, __) => Transform.translate(
+              offset: Offset(0, _deslocamento(y, larguraJanela * 5 / 4)),
               child: _janela(true),
             ),
           ),
@@ -104,13 +105,27 @@ class _VitrineState extends State<Vitrine> {
     });
   }
 
-  /// Quanto a janela desce para continuar à vista: acompanha a tela até acabar a lista (como o "sticky" da web).
-  double _deslocamento(double alturaJanela) {
+  // Onde o bloco está na página (a partir do topo do conteúdo) e a altura dele, medidos depois de cada layout.
+  // Medir na hora de desenhar leria o layout do quadro anterior e a janela ficaria deslocada.
+  double _topoNaPagina = 0;
+  double _alturaBloco = 0;
+
+  void _medir() {
+    if (!mounted) return;
     final caixa = context.findRenderObject();
-    if (caixa is! RenderBox || !caixa.attached || !caixa.hasSize) return 0;
-    final topo = caixa.localToGlobal(Offset.zero).dy;
-    final sobra = caixa.size.height - alturaJanela;
-    return math.max(0, math.min(_topoFixo - topo, sobra));
+    if (caixa is! RenderBox || !caixa.attached || !caixa.hasSize) return;
+    final topo = caixa.localToGlobal(Offset.zero).dy + widget.rolagem.value;
+    if ((topo - _topoNaPagina).abs() < 0.5 && (caixa.size.height - _alturaBloco).abs() < 0.5) return;
+    setState(() {
+      _topoNaPagina = topo;
+      _alturaBloco = caixa.size.height;
+    });
+  }
+
+  /// Quanto a janela desce para continuar à vista: acompanha a tela até acabar a lista (como o "sticky" da web).
+  double _deslocamento(double rolagemY, double alturaJanela) {
+    final sobra = _alturaBloco - alturaJanela;
+    return math.max(0, math.min(_topoFixo - (_topoNaPagina - rolagemY), sobra));
   }
 }
 
@@ -149,7 +164,7 @@ class _Linha extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
               children: [
-                Flexible(
+                Expanded(
                   child: AnimatedDefaultTextStyle(
                     duration: reduzir ? Duration.zero : const Duration(milliseconds: 300),
                     style: TextStyle(
