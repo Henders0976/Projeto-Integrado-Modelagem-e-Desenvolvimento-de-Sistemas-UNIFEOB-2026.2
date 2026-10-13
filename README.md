@@ -76,7 +76,7 @@ O catálogo de peças (`assets/catalogo.json`, 15 peças da coleção Essence) e
 - **No app:** a loja só mostra o que a administradora ativou no painel (o interruptor de cada produto). Depois de ativar uma peça, reabra o app para ela aparecer.
 - **Sem a API** (fora do ar ou sem servidor), o app abre com a vitrine vazia, porque o `catalogo.json` embutido vem desativado.
 - **Ligar uma peça direto no arquivo** (app sem API): troque `"ativo": false` por `true` (ou apague o campo) nessa peça.
-- **O site não é afetado:** ele continua mostrando o catálogo inteiro, porque ignora o campo `ativo` do `catalogo.json`. Só quando o site usa a API (`VITE_API_URL`) ele mostra o que a administradora ativou, como o app.
+- **O site não é afetado:** ele continua mostrando o catálogo inteiro, porque ignora o campo `ativo` do `catalogo.json`. Isso vale também quando o site usa a API (`VITE_API_URL`): a vitrine sempre vem do `catalogo.json`, e a API serve só para gravar e consultar pedidos. Uma peça que a administradora desativou continua aparecendo, mas a API recusa o pedido dela ("Peça indisponível").
 - Produtos cadastrados pelo painel já nascem ativos. As fotos das peças desativadas continuam disponíveis no formulário de novo produto.
 
 ## Assistente de IA (Firebase)
@@ -129,7 +129,7 @@ Além do app, o repositório tem uma **versão para site** da loja, na pasta [`s
 - Mesmo catálogo, mesmas fotos, mesma fonte e mesmas cores do app. `npm run sync` copia `assets/catalogo.json`, as fotos, as fontes e os ícones do app para `site/public/`.
 - **Páginas:** Início, Loja, Peça, Sacola, Coleções, Sobre, Contato, Novidades, Meus pedidos e Privacidade/termos. A **área administrativa fica só no app**.
 - **Loja** com filtro por categoria e duas visões: a **vitrine** (lista de nomes com a prévia da foto e uma transição que abre a peça em tela cheia) e a **grade**.
-- **Fechamento de pedido** pelo WhatsApp, com a mesma mensagem do app. Se houver a API (a mesma das rotas `GET /produtos`, `POST /pedidos` e `GET /pedidos/:id`), o pedido também é gravado no banco.
+- **Fechamento de pedido** pelo WhatsApp, com a mesma mensagem do app. Se houver a API (a mesma das rotas `POST /pedidos` e `GET /pedidos/:id`), o pedido também é gravado no banco.
 - **Animações ligadas à rolagem** (scroll-linked, parallax nas fotos), que respeitam "reduzir movimento" do sistema.
 
 ```bash

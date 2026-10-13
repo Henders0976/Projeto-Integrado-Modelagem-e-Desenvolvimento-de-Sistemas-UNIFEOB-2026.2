@@ -1,4 +1,4 @@
-import { API_URL, getJson } from "./api";
+import { getJson } from "./api";
 
 /** Categorias do catálogo (mesmos nomes do app: lib/models/categoria.dart). */
 export const CATEGORIAS = {
@@ -98,18 +98,13 @@ export function normalizarCatalogo(dados: unknown): Peca[] {
   return pecas;
 }
 
-export type FonteCatalogo = "api" | "embutido";
-
-/** Catálogo da API (se configurada) ou o catalogo.json que vai junto com o site. */
-export async function carregarCatalogo(): Promise<{ pecas: Peca[]; fonte: FonteCatalogo }> {
-  if (API_URL) {
-    try {
-      return { pecas: normalizarCatalogo(await getJson(`${API_URL}/produtos`, 6000)), fonte: "api" };
-    } catch (e) {
-      console.warn("API indisponível, usando catalogo.json:", e);
-    }
-  }
-  return { pecas: normalizarCatalogo(await getJson(`${BASE}catalogo.json`, 10000)), fonte: "embutido" };
+/**
+ * Catálogo do site: sempre o catalogo.json que vai junto com ele, com ou sem API.
+ * A API (`GET /produtos`) só devolve o que a administradora ativou no app; se o site a usasse, ficaria vazio
+ * enquanto o catálogo estiver desativado. A API serve ao site só para gravar e consultar pedidos.
+ */
+export async function carregarCatalogo(): Promise<Peca[]> {
+  return normalizarCatalogo(await getJson(`${BASE}catalogo.json`, 10000));
 }
 
 export const precoTexto = (p: Peca, formatar: (v: number) => string): string =>
