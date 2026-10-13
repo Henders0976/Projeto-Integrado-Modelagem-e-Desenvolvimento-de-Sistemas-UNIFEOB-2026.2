@@ -2,6 +2,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 
+import '../core/resumo.dart';
 import '../ia/assistente_page.dart';
 import '../models/models.dart';
 import '../services/catalogo_repository.dart';
@@ -18,6 +19,7 @@ import 'meus_pedidos_page.dart';
 import 'novidades.dart';
 import 'peca_page.dart';
 import 'privacidade_page.dart';
+import 'resumo_loja.dart';
 import 'rolagem_suave.dart';
 import 'sacola_page.dart';
 import 'sobre_page.dart';
@@ -133,6 +135,20 @@ class _HomePageState extends State<HomePage> {
         ),
       );
 
+  /// Uma linha do índice leva à vitrine já filtrada por aquela categoria.
+  void _escolherCategoria(Categoria c) {
+    setState(() => _filtro = c);
+    _irPara(_chaveColecao);
+  }
+
+  /// Seção da home: centralizada, na largura máxima, com o respiro de cima das demais.
+  Widget _secao(Widget filho) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: _larguraMax),
+          child: Padding(padding: const EdgeInsets.fromLTRB(24, 112, 24, 0), child: filho),
+        ),
+      );
+
   /// Acesso à área administrativa: toque longo no logo. Não aparece para clientes.
   void _abrirAdmin() => Navigator.push(
         context,
@@ -142,6 +158,8 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final pecas = widget.catalogo.porCategoria(_filtro);
+    final todas = widget.catalogo.todas();
+    final resumo = resumirCatalogo(todas);
     final largura = MediaQuery.sizeOf(context).width;
     final lateral = ((largura - _larguraMax) / 2).clamp(0.0, double.infinity) + 24;
     final reduzir = MediaQuery.disableAnimationsOf(context);
@@ -213,7 +231,20 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             SliverToBoxAdapter(child: _colecoes(context)),
+            // Índice e guia saem do catálogo e somem junto com as peças (nada a contar sem peça ativa).
+            if (todas.isNotEmpty)
+              SliverToBoxAdapter(
+                child: _secao(IndiceCategorias(resumo: resumo, aoEscolher: _escolherCategoria)),
+              ),
             SliverToBoxAdapter(child: _sobre(context)),
+            if (todas.isNotEmpty)
+              SliverToBoxAdapter(
+                child: _secao(GuiaDaLoja(
+                  resumo: resumo,
+                  aoFalar: () =>
+                      widget.whatsapp.enviar('Olá, RV Label! Gostaria de tirar uma dúvida.'),
+                )),
+              ),
             SliverToBoxAdapter(child: _comoComprar(context)),
             SliverToBoxAdapter(
               child: Padding(
