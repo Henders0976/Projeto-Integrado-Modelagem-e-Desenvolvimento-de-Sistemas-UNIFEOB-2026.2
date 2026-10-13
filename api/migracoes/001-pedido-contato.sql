@@ -2,11 +2,11 @@
 -- Por quê: a consulta "Meus pedidos" autoriza pelo telefone, e antes ela lia o telefone da cliente, que um pedido
 -- anônimo com o mesmo CPF conseguia trocar. Agora o telefone do pedido não muda depois de gravado.
 --
--- Rodar UMA vez, num banco que já tenha as tabelas (schema.sql de uma versão anterior). Não apaga linhas;
--- só tira a máscara do telefone das clientes ("(35) 99999-9999" vira "35999999999").
--- Banco novo, criado com o schema.sql atual? Não precisa rodar.
--- Se rodar duas vezes o MySQL avisa que a coluna já existe e para: nada é estragado.
-USE Rv_Label;
+-- Aplicada por `npm run migrar`. Não apaga linhas; só tira a máscara do telefone das clientes
+-- ("(35) 99999-9999" vira "35999999999").
+-- Banco criado com o schema.sql atual, ou que já recebeu esta migração à mão? A linha abaixo faz a ferramenta
+-- só anotá-la, sem rodar de novo.
+-- ja-aplicada: SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'pedido' AND COLUMN_NAME = 'nome_comprador'
 
 ALTER TABLE pedido
   ADD COLUMN nome_comprador VARCHAR(120) NULL AFTER id_cliente,

@@ -7,6 +7,10 @@
     "start": "node server.js",
     "seed": "node seed.js",
     "admin": "node criar-admin.js",
+    "migrar": "node migrar.js",
+    "backup": "node backup.js",
+    "test:unit": "node --test limite.test.js senha.test.js",
+    "test:migrar": "node --test teste-migrar.js",
     "test": "node --test teste-api.js"
   },
   "dependencies": {

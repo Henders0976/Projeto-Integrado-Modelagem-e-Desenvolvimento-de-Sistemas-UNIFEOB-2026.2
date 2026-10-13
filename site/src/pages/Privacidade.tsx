@@ -1,7 +1,19 @@
+import type { ReactNode } from "react";
 import { useTitulo } from "@/hooks/useTitulo";
+import { CNPJ, EMAIL_CONTATO } from "@/lib/formato";
+
+const email = (
+  <a href={`mailto:${EMAIL_CONTATO}`} className="underline decoration-texto/50 underline-offset-4 hover:decoration-texto">
+    {EMAIL_CONTATO}
+  </a>
+);
 
 /** Política de privacidade (LGPD) e termos de uso, em linguagem direta. Mesmo texto do app, com o item do navegador. */
-const BLOCOS: [string, string][] = [
+const BLOCOS: [string, ReactNode][] = [
+  [
+    "Quem é o responsável",
+    <>A RV Label (CNPJ {CNPJ}) decide como os seus dados são usados e responde por eles. Para qualquer assunto sobre seus dados, escreva para {email}.</>,
+  ],
   [
     "Que dados coletamos",
     "Nome e telefone para atender seu pedido. O CPF é opcional e só pedimos se você quiser nota fiscal. Não pedimos senha nem dados de cartão.",
@@ -16,7 +28,7 @@ const BLOCOS: [string, string][] = [
   ],
   [
     "Seus direitos (LGPD)",
-    "Você pode pedir acesso, correção ou exclusão dos seus dados, e retirar o consentimento quando quiser. É só chamar a RV Label no WhatsApp.",
+    <>Você pode pedir acesso, correção ou exclusão dos seus dados, e retirar o consentimento quando quiser. Escreva para {email} ou chame a RV Label no WhatsApp.</>,
   ],
   [
     "Como consultar seu pedido",

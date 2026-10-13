@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../ia/assistente_page.dart';
 import '../models/models.dart';
 import '../services/catalogo_repository.dart';
+import '../services/loja_info.dart';
 import '../services/sacola.dart';
 import '../services/whatsapp_service.dart';
 import 'admin_page.dart';
@@ -730,6 +731,7 @@ class _HomePageState extends State<HomePage> {
           MaterialPageRoute(builder: (_) => const PrivacidadePage()))),
       link('Falar no WhatsApp',
           () => widget.whatsapp.enviar('Olá, RV Label! Gostaria de tirar uma dúvida.')),
+      link('Enviar e-mail', abrirEmailContato),
     ]);
     return Center(
       child: ConstrainedBox(
@@ -756,7 +758,7 @@ class _HomePageState extends State<HomePage> {
                 ajuda,
               ],
               const SizedBox(height: 40),
-              const Text('© 2026 RV Label · Feito com carinho, peça por peça',
+              const Text('© 2026 RV Label · CNPJ $cnpjLoja · Feito com carinho, peça por peça',
                   style: TextStyle(color: corTextoSuave, fontSize: 13)),
             ]);
           }),

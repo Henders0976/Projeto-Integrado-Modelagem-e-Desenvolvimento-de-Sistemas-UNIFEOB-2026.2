@@ -117,3 +117,36 @@ test('desativar produto o tira da vitrine pública', async () => {
   const vitrine = (await chama('GET', '/produtos', null, false)).json.pecas;
   assert.ok(!vitrine.some((p) => p.id === COD));
 });
+
+test('pedir peça desativada devolve o nome dela, não o código interno', async () => {
+  const r = await chama('POST', '/pedidos', { comprador: { nome: 'Cliente Teste', telefone: TEL }, itens: [{ produtoId: COD, cor: 'Preto', tamanho: 'M', quantidade: 1 }] }, false);
+  assert.equal(r.status, 400);
+  assert.match(r.json.erro, /Peça de teste/);
+  assert.doesNotMatch(r.json.erro, new RegExp(COD));
+});
+
+test('pedido rejeita nome longo demais, quantidade absurda e sacola enorme', async () => {
+  const item = { produtoId: COD, cor: 'Preto', tamanho: 'M', quantidade: 1 };
+  const pedir = (corpo) => chama('POST', '/pedidos', { comprador: { nome: 'Cliente Teste', telefone: TEL }, itens: [item], ...corpo }, false);
+  assert.equal((await pedir({ comprador: { nome: 'x'.repeat(121), telefone: TEL } })).status, 400);
+  assert.equal((await pedir({ itens: [{ ...item, quantidade: 100 }] })).status, 400);
+  assert.equal((await pedir({ itens: Array(51).fill(item) })).status, 400);
+});
+
+test('/saude responde sem login e as respostas levam os cabeçalhos de segurança', async () => {
+  const r = await fetch(`${URL}/saude`);
+  assert.equal(r.status, 200);
+  assert.deepEqual(await r.json(), { ok: true });
+  assert.equal(r.headers.get('x-content-type-options'), 'nosniff');
+  assert.equal(r.headers.get('x-powered-by'), null);
+  const p = await fetch(`${URL}/pedidos/1?telefone=00000000000`);
+  assert.equal(p.headers.get('cache-control'), 'no-store');
+});
+
+// Por último: esgota o limite deste IP, e as demais rotas de pedido deixam de responder por alguns minutos.
+test('consultar pedido muitas vezes seguidas é barrado com 429', async () => {
+  const status = [];
+  for (let i = 0; i < 40; i++) status.push((await chama('GET', `/pedidos/${idPedido}?telefone=35900000000`, null, false)).status);
+  assert.ok(status.includes(429), 'nenhuma das 40 consultas foi barrada');
+  assert.ok(status.indexOf(429) >= 20, 'o limite começou cedo demais e atrapalha uso normal');
+});

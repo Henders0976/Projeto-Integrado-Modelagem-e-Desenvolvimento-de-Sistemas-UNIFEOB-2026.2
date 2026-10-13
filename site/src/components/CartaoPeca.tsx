@@ -18,7 +18,6 @@ export default function CartaoPeca({ peca, transicao = true }: { peca: Peca; tra
       to={destino}
       viewTransition={transicao}
       className="group block"
-      aria-label={`${peca.nome}, ${precoTexto(peca, formatarReais)}`}
     >
       <div
         className="relative aspect-[4/5] overflow-hidden rounded shadow-[0_6px_14px_rgba(0,0,0,0.16)] transition duration-300 group-hover:-translate-y-1.5 group-hover:shadow-[0_16px_30px_rgba(0,0,0,0.45)]"
@@ -27,10 +26,10 @@ export default function CartaoPeca({ peca, transicao = true }: { peca: Peca; tra
         <FotoPeca
           src={foto}
           cor={peca.cores[0]}
-          alt={peca.nome}
+          alt=""
           className="h-full w-full transition-transform duration-500 group-hover:scale-[1.07]"
         />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex translate-y-full items-center justify-center gap-2 bg-gradient-to-b from-transparent to-preto/80 py-3.5 text-xs font-semibold tracking-[0.25em] opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 flex translate-y-full items-center justify-center gap-2 bg-gradient-to-b from-transparent to-preto/80 py-3.5 text-xs font-semibold tracking-[0.25em] opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
           VER PEÇA <ArrowRight className="h-3.5 w-3.5" aria-hidden />
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { COLECOES } from "@/lib/colecoes";
-import { urlWhatsApp } from "@/lib/formato";
+import { CNPJ, EMAIL_CONTATO, urlWhatsApp } from "@/lib/formato";
 
 const linkCls = "block py-1.5 text-suave transition hover:text-texto";
 const tituloCls = "mb-2.5 text-xs font-semibold uppercase tracking-[0.25em]";
@@ -39,9 +39,12 @@ export default function Footer() {
           >
             Falar no WhatsApp
           </a>
+          <a href={`mailto:${EMAIL_CONTATO}`} className={linkCls}>
+            Enviar e-mail
+          </a>
         </nav>
       </div>
-      <p className="mt-10 text-[13px] text-suave">© 2026 RV Label · Feito com carinho, peça por peça</p>
+      <p className="mt-10 text-[13px] text-suave">© 2026 RV Label · CNPJ {CNPJ} · Feito com carinho, peça por peça</p>
     </footer>
   );
 }

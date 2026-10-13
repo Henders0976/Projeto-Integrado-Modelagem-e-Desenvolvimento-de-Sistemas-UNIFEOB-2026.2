@@ -11,6 +11,10 @@ const configurado = soDigitos(String(import.meta.env.VITE_WHATSAPP ?? ""));
 export const WHATSAPP_NUMERO: string = configurado || "5511999990000";
 export const WHATSAPP_CONFIGURADO: boolean = configurado.length > 0;
 
+/** Identificação da loja: aparece no rodapé e na política de privacidade. */
+export const CNPJ = "68.647.856/0001-97";
+export const EMAIL_CONTATO = "suporte.rvlabel@gmail.com";
+
 export const urlWhatsApp = (mensagem: string, numero: string = WHATSAPP_NUMERO): string =>
   `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
 
