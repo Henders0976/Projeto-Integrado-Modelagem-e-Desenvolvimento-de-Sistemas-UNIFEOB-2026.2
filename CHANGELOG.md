@@ -12,7 +12,7 @@ Segue o formato do [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - A vitrine vem sempre do `catalogo.json`, com ou sem API: a API só devolve o que a administradora ativou, e com o catálogo
   desativado a loja ficaria vazia. A API serve ao site só para gravar e consultar pedidos.
 - Privacidade com identificação do responsável (CNPJ) e e-mail de contato para pedidos sobre os dados (LGPD); CNPJ e e-mail
-  também no rodapé. O mesmo texto está na tela de privacidade do app.
+  também no rodapé. Vale para o site e para o app (tela de privacidade e rodapé iguais nos dois).
 - Sem deslocamento de layout ao carregar (CLS 0 na home e na loja), nomes acessíveis dos cartões corrigidos, `robots.txt`
   e pré-carregamento do catálogo. Lighthouse no celular: acessibilidade, boas práticas e SEO em 100.
 

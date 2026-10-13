@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/loja_info.dart';
 import 'fundo_liquido.dart';
 import 'rolagem_suave.dart';
 
@@ -9,9 +10,9 @@ class PrivacidadePage extends StatelessWidget {
 
   static const _blocos = <(String, String)>[
     ('Quem é o responsável',
-        'A RV Label (CNPJ 68.647.856/0001-97) decide como os seus dados são usados '
+        'A RV Label (CNPJ $cnpjLoja) decide como os seus dados são usados '
             'e responde por eles. Para qualquer assunto sobre seus dados, escreva para '
-            'suporte.rvlabel@gmail.com.'),
+            '$emailContato.'),
     ('Que dados coletamos',
         'Nome e telefone para atender seu pedido. O CPF é opcional e só pedimos '
             'se você quiser nota fiscal. Não pedimos senha nem dados de cartão.'),
@@ -23,7 +24,7 @@ class PrivacidadePage extends StatelessWidget {
             'Depois disso, apagamos ou tornamos os dados anônimos.'),
     ('Seus direitos (LGPD)',
         'Você pode pedir acesso, correção ou exclusão dos seus dados, e retirar o '
-            'consentimento quando quiser. Escreva para suporte.rvlabel@gmail.com ou '
+            'consentimento quando quiser. Escreva para $emailContato ou '
             'chame a RV Label no WhatsApp.'),
     ('Como consultar seu pedido',
         'Em "Meus pedidos" você vê o andamento informando o número do pedido e o '
