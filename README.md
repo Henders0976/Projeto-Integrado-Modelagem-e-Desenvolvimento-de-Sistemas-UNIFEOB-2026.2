@@ -61,10 +61,13 @@ Rotas que o app usa:
 | `GET /produtos` | público | só as peças que a administradora ativou (se a API falhar, o app abre sem peças) |
 | `POST /pedidos` | público | registrar o pedido |
 | `GET /pedidos/:id?telefone=` | público | consultar o andamento (exige os dois dados) |
+| `GET /saude` | monitor | 200 se a API alcança o banco, 503 se não |
 | `POST /admin/login` | admin | entrar e receber o token |
 | `GET/POST /admin/produtos`, `PATCH /admin/produtos/:codigo` | admin | listar, cadastrar e alterar produtos |
 | `PUT /admin/estoque` | admin | ajustar o estoque de uma variação |
 | `GET /admin/pedidos`, `PATCH /admin/pedidos/:id` | admin | listar pedidos e mudar o status |
+
+**Operação da API** (em `api/`, detalhes em `api/COMO-RODAR.md`): `npm run migrar` aplica as mudanças de banco pendentes, `npm run backup` gera o backup (fora do git), e as rotas públicas de pedido têm limite de requisições por IP. Os testes são `npm run test:unit`, `npm run test:migrar` e `npm test`, e rodam sozinhos no GitHub em todo PR.
 
 **Acesso ao painel:** não há link para clientes. Segure o clique (ou o dedo) sobre a logo **RV·LABEL** na tela inicial. Não existe cadastro público de administrador: a conta é criada direto no banco pela equipe e a senha é guardada criptografada.
 
