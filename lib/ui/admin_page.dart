@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../core/ativacao_em_lote.dart';
 import '../core/indicadores_vendas.dart';
 import '../core/moeda.dart';
 import '../services/api.dart';
@@ -117,6 +118,7 @@ class _PainelState extends State<_Painel> {
   Future<void> _novoProduto() async {
     final criou = await Navigator.of(context).push<bool>(MaterialPageRoute(
         builder: (_) => AdminProdutoPage(catalogo: widget.catalogo)));
+    if (criou == true) await CatalogoRepository.atualizarCopiaLocal(); // o produto novo também fica guardado
     if (criou == true && mounted) setState(() => _versao++);
   }
 
@@ -139,7 +141,7 @@ class _PainelState extends State<_Painel> {
           body: FundoLiquido(
             child: TabBarView(children: [
               const _PedidosAdmin(),
-              _ProdutosAdmin(key: ValueKey(_versao)),
+              ProdutosAdmin(key: ValueKey(_versao)),
             ]),
           ),
         ),
@@ -150,7 +152,10 @@ class _PainelState extends State<_Painel> {
 mixin _Carrega<T extends StatefulWidget, L> on State<T> {
   late Future<List<L>> futuro = buscar();
   Future<List<L>> buscar();
-  void recarregar() => setState(() => futuro = buscar());
+  // Com chaves: a seta devolveria o Future da atribuição, e o setState não aceita callback que devolve Future.
+  void recarregar() => setState(() {
+        futuro = buscar();
+      });
   /// "Sem conexão" só para falha de rede de verdade; qualquer outro erro mostra o motivo.
   void aviso(Object e) {
     final texto = e is ApiErro
@@ -274,24 +279,146 @@ class _CartaoIndicadores extends StatelessWidget {
       );
 }
 
-class _ProdutosAdmin extends StatefulWidget {
-  const _ProdutosAdmin({super.key});
+/// Lista de produtos da área administrativa: liga/desliga cada peça na loja, altera preço e estoque, e permite
+/// marcar várias (ou todas) para ativar ou desativar de uma vez. As funções vêm por parâmetro só para o teste
+/// poder trocá-las; no app valem as da API.
+class ProdutosAdmin extends StatefulWidget {
+  const ProdutosAdmin({
+    super.key,
+    this.buscarProdutos = ApiAdmin.produtos,
+    this.alterarProduto = ApiAdmin.alterarProduto,
+    this.atualizarCopia = CatalogoRepository.atualizarCopiaLocal,
+  });
+
+  final Future<List<Map<String, dynamic>>> Function() buscarProdutos;
+  final Future<void> Function(String codigo, Map<String, dynamic> campos) alterarProduto;
+
+  /// Chamada depois de cada mudança: guarda no aparelho o que a loja mostra agora.
+  final Future<void> Function() atualizarCopia;
+
   @override
-  State<_ProdutosAdmin> createState() => _ProdutosAdminState();
+  State<ProdutosAdmin> createState() => _ProdutosAdminState();
 }
 
-class _ProdutosAdminState extends State<_ProdutosAdmin>
-    with _Carrega<_ProdutosAdmin, Map<String, dynamic>> {
+class _ProdutosAdminState extends State<ProdutosAdmin>
+    with _Carrega<ProdutosAdmin, Map<String, dynamic>> {
   @override
-  Future<List<Map<String, dynamic>>> buscar() => ApiAdmin.produtos();
+  Future<List<Map<String, dynamic>>> buscar() => widget.buscarProdutos();
+
+  bool _selecionando = false;
+  bool _ocupado = false; // ativando/desativando em lote
+  final _marcados = <String>{};
 
   Future<void> _executar(Future<void> Function() acao) async {
     try {
       await acao();
+      await widget.atualizarCopia();
       recarregar();
     } catch (e) {
       if (mounted) aviso(e);
     }
+  }
+
+  void _sairDaSelecao() => setState(() {
+        _selecionando = false;
+        _marcados.clear();
+      });
+
+  Future<void> _aplicarEmLote(List<Map<String, dynamic>> lista, bool ativo) async {
+    setState(() => _ocupado = true);
+    final r = await aplicarAtivo(
+      produtos: lista,
+      codigos: _marcados,
+      ativo: ativo,
+      alterar: (codigo, v) => widget.alterarProduto(codigo, {'ativo': v}),
+    );
+    await widget.atualizarCopia();
+    if (!mounted) return;
+    setState(() => _ocupado = false);
+    _sairDaSelecao();
+    recarregar();
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(resumoDoLote(r, ativo: ativo))));
+  }
+
+  /// Barra do topo da lista: "Selecionar vários", ou, no modo de seleção, "Selecionar todos" e as ações.
+  Widget _barraSelecao(List<Map<String, dynamic>> lista) {
+    if (!_selecionando) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: TextButton.icon(
+          icon: const Icon(Icons.checklist),
+          label: const Text('Selecionar vários'),
+          onPressed: lista.isEmpty ? null : () => setState(() => _selecionando = true),
+        ),
+      );
+    }
+    final todos = lista.isNotEmpty && _marcados.length == lista.length;
+    final pode = _marcados.isNotEmpty && !_ocupado;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // A linha inteira marca/desmarca todos: o texto também é clicável, não só a caixinha.
+          InkWell(
+            onTap: _ocupado
+                ? null
+                : () => setState(() {
+                      if (todos) {
+                        _marcados.clear();
+                      } else {
+                        _marcados.addAll([for (final p in lista) p['codigo'] as String]);
+                      }
+                    }),
+            child: Row(children: [
+              IgnorePointer(
+                child: Checkbox(
+                  tristate: true,
+                  value: todos ? true : (_marcados.isEmpty ? false : null),
+                  onChanged: (_) {},
+                ),
+              ),
+              const Text('Selecionar todos'),
+              const Spacer(),
+              Text('${_marcados.length} de ${lista.length}'),
+              const SizedBox(width: 8),
+            ]),
+          ),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            FilledButton.icon(
+              icon: const Icon(Icons.visibility),
+              label: const Text('Ativar'),
+              onPressed: pode ? () => _aplicarEmLote(lista, true) : null,
+            ),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.visibility_off),
+              label: const Text('Desativar'),
+              onPressed: pode ? () => _aplicarEmLote(lista, false) : null,
+            ),
+            TextButton(onPressed: _ocupado ? null : _sairDaSelecao, child: const Text('Cancelar')),
+          ]),
+          if (_ocupado) const Padding(padding: EdgeInsets.only(top: 8), child: LinearProgressIndicator()),
+        ]),
+      ),
+    );
+  }
+
+  /// Linha do modo de seleção: caixa de marcar, nome e se a peça está na loja.
+  Widget _linhaSelecionavel(Map<String, dynamic> p) {
+    final codigo = p['codigo'] as String;
+    final ativo = p['ativo'] == true;
+    return Card(
+      child: CheckboxListTile(
+        value: _marcados.contains(codigo),
+        onChanged: _ocupado
+            ? null
+            : (v) => setState(() => v == true ? _marcados.add(codigo) : _marcados.remove(codigo)),
+        title: Text(p['nome'] as String,
+            style: TextStyle(decoration: ativo ? null : TextDecoration.lineThrough)),
+        subtitle: Text('$codigo · ${ativo ? 'na loja' : 'desativada'}'),
+      ),
+    );
   }
 
   /// Pede um número; vazio devolve null (usado para "sem controle" no estoque).
@@ -332,7 +459,11 @@ class _ProdutosAdminState extends State<_ProdutosAdmin>
           return RefreshIndicator(
             onRefresh: () async => recarregar(),
             child: ListaSuave(padding: const EdgeInsets.all(12), children: [
+              _barraSelecao(snap.data!),
               for (final p in snap.data!)
+                if (_selecionando)
+                  _linhaSelecionavel(p)
+                else
                 Card(
                   child: ExpansionTile(
                     title: Text(p['nome'] as String,
@@ -348,7 +479,7 @@ class _ProdutosAdminState extends State<_ProdutosAdmin>
                         title: const Text('Aparece na loja'),
                         value: p['ativo'] == true,
                         onChanged: (v) => _executar(
-                            () => ApiAdmin.alterarProduto(p['codigo'] as String, {'ativo': v})),
+                            () => widget.alterarProduto(p['codigo'] as String, {'ativo': v})),
                       ),
                       TextButton.icon(
                         icon: const Icon(Icons.edit, size: 18),
@@ -360,7 +491,7 @@ class _ProdutosAdminState extends State<_ProdutosAdmin>
                           final preco = v == null ? null : double.tryParse(v);
                           if (v != null && (preco == null || preco < 0)) return aviso(ApiErro('Preço inválido.'));
                           await _executar(() =>
-                              ApiAdmin.alterarProduto(p['codigo'] as String, {'preco': preco}));
+                              widget.alterarProduto(p['codigo'] as String, {'preco': preco}));
                         },
                       ),
                       const Text('Estoque (toque para alterar)'),

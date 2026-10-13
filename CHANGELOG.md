@@ -34,6 +34,15 @@ Segue o formato do [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - `README` com a seção do site e do catálogo desativado; este `CHANGELOG`.
 - O `.gitignore` da raiz deixou de ser versionado (os de `android/`, `api/`, `ios/`, `site/` e `windows/` continuam).
 
+## 1.2.1 — 2026-10-13
+- O que a administradora ativou fica salvo: o app guarda uma cópia do catálogo ativo no aparelho e, sem o servidor, mostra
+  essa cópia (antes abria com a vitrine vazia). A cópia é atualizada a cada abertura com o servidor ligado e a cada mudança
+  no painel.
+- Painel de produtos: "Selecionar vários", com "Selecionar todos", para ativar ou desativar várias peças de uma vez; o aviso
+  conta quantas mudaram, quantas já estavam assim e quantas deram erro.
+- Corrigido o erro "setState() callback argument returned a Future" ao recarregar as listas do painel (só aparecia em modo de
+  depuração).
+
 ## 1.2.0 — 2026-10-13
 - O catálogo vem todo desativado: a administradora decide o que aparece no app pelo painel.
 - O app ganhou as mesmas peças de interface que o site já tinha: vitrine em lista com a foto ao passar o mouse (com

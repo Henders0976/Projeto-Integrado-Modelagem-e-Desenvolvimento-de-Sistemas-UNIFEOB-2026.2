@@ -16,7 +16,7 @@ Pegue o `.zip` da versão mais recente em **[Releases](../../releases/latest)**.
 
 Funciona em Windows 10/11 de 64 bits (Intel/AMD); as bibliotecas do Visual C++ já vão no pacote. Como o app ainda não tem assinatura digital, o Windows pode avisar "O Windows protegeu o seu computador": clique em **Mais informações** e depois em **Executar assim mesmo**. No Windows edição "N", instale o *Media Feature Pack* da Microsoft.
 
-Sem o servidor (veja [Servidor e banco](#servidor-e-banco)) o app abre com a vitrine vazia (o catálogo embutido vem desativado), não registra pedidos e a área administrativa não abre.
+Sem o servidor (veja [Servidor e banco](#servidor-e-banco)) o app mostra a última cópia do catálogo que guardou (o que a administradora tinha ativado), não registra pedidos e a área administrativa não abre. Só se nunca falou com o servidor é que a vitrine abre vazia, porque o catálogo embutido vem desativado.
 
 ## O que o app faz
 
@@ -76,8 +76,10 @@ Rotas que o app usa:
 O catálogo de peças (`assets/catalogo.json`, 15 peças da coleção Essence) está no repositório, mas **todo desativado no app**, para que a administradora tenha o controle total da loja do app.
 
 - **Banco:** `npm run seed` (em `api/`) importa as peças com `ativo = 0`. Importar de novo nunca liga nem desliga o que já existe, então a escolha dela fica preservada.
-- **No app:** a loja só mostra o que a administradora ativou no painel (o interruptor de cada produto). Depois de ativar uma peça, reabra o app para ela aparecer.
-- **Sem a API** (fora do ar ou sem servidor), o app abre com a vitrine vazia, porque o `catalogo.json` embutido vem desativado.
+- **No app:** a loja só mostra o que a administradora ativou no painel (o interruptor de cada produto, ou "Selecionar vários" para ativar ou desativar várias de uma vez, com "Selecionar todos"). Depois de ativar uma peça, reabra o app para ela aparecer.
+- **Fica salvo:** o que ela ativou continua aparecendo até ela desativar, mesmo fechando e abrindo o app. A cada mudança no painel, e a cada abertura com o servidor ligado, o app guarda uma cópia do catálogo ativo no aparelho.
+- **Sem a API** (fora do ar ou sem servidor), o app usa essa cópia. Só se nunca falou com o servidor abre com a vitrine vazia, porque o `catalogo.json` embutido vem desativado.
+- **Fotos:** o caminho de cada foto (`assets/fotos/...`) fica no banco e precisa ser igual ao nome de um arquivo que vai dentro do app. Peça que sobrou no banco com foto que não existe mais (por exemplo, as de testes antigos) aparece como "Foto em breve" até alguém corrigir a foto ou desativar a peça.
 - **Ligar uma peça direto no arquivo** (app sem API): troque `"ativo": false` por `true` (ou apague o campo) nessa peça.
 - **O site não é afetado:** ele continua mostrando o catálogo inteiro, porque ignora o campo `ativo` do `catalogo.json`. Isso vale também quando o site usa a API (`VITE_API_URL`): a vitrine sempre vem do `catalogo.json`, e a API serve só para gravar e consultar pedidos. Uma peça que a administradora desativou continua aparecendo, mas a API recusa o pedido dela ("Peça indisponível").
 - Produtos cadastrados pelo painel já nascem ativos. As fotos das peças desativadas continuam disponíveis no formulário de novo produto.
