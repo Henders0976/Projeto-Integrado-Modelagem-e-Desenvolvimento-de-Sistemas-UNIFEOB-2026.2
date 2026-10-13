@@ -9,9 +9,19 @@ import 'rolagem_suave.dart';
 import 'tema.dart';
 
 class PecaPage extends StatefulWidget {
-  const PecaPage({super.key, required this.peca, required this.sacola});
+  const PecaPage({
+    super.key,
+    required this.peca,
+    required this.sacola,
+    this.parecidas = const [],
+    this.cartao,
+  });
   final Produto peca;
   final Sacola sacola;
+
+  /// "Você também pode gostar": até 3 peças, desenhadas com [cartao] (o mesmo cartão da vitrine).
+  final List<Produto> parecidas;
+  final Widget Function(Produto)? cartao;
 
   @override
   State<PecaPage> createState() => _PecaPageState();
@@ -44,6 +54,32 @@ class _PecaPageState extends State<PecaPage> {
       if (mounted) setState(() => _adicionada = false);
     });
   }
+
+  /// "Você também pode gostar": até 3 peças, primeiro as da mesma categoria.
+  Widget _parecidas(BuildContext context, double largura) => Padding(
+        padding: const EdgeInsets.only(top: 64, bottom: 8),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Você também pode gostar',
+              style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 28),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: largura >= 560 ? 3 : 2,
+            childAspectRatio: 0.54,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 32,
+            children: [
+              for (final (i, p) in widget.parecidas.indexed)
+                AoRolar(
+                  key: ValueKey(p.id),
+                  escalonar: i * 0.1,
+                  child: widget.cartao!(p),
+                ),
+            ],
+          ),
+        ]),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -137,24 +173,28 @@ class _PecaPageState extends State<PecaPage> {
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1000),
-                  child: largo
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(flex: 5, child: fotoWidget),
-                            const SizedBox(width: 48),
-                            Expanded(
-                                flex: 6,
-                                child: Revelar(
-                                    atraso: const Duration(milliseconds: 120),
-                                    child: detalhes)),
-                          ],
-                        )
-                      : Column(children: [
-                          fotoWidget,
-                          const SizedBox(height: 24),
-                          Revelar(child: detalhes),
-                        ]),
+                  child: Column(children: [
+                    if (largo)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(flex: 5, child: fotoWidget),
+                          const SizedBox(width: 48),
+                          Expanded(
+                              flex: 6,
+                              child: Revelar(
+                                  atraso: const Duration(milliseconds: 120),
+                                  child: detalhes)),
+                        ],
+                      )
+                    else ...[
+                      fotoWidget,
+                      const SizedBox(height: 24),
+                      Revelar(child: detalhes),
+                    ],
+                    if (widget.parecidas.isNotEmpty && widget.cartao != null)
+                      _parecidas(context, c.maxWidth),
+                  ]),
                 ),
               ),
             );

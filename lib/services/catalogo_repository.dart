@@ -5,6 +5,7 @@ import 'package:flutter/services.dart' show rootBundle;
 
 import '../models/models.dart';
 import 'api.dart';
+import 'catalogo_local.dart';
 
 /// Contrato público do catálogo. A implementação ([_CatalogoJson]) é
 /// PRIVADA à biblioteca: ninguém de fora enxerga nem instancia a classe,
@@ -18,19 +19,47 @@ abstract class CatalogoRepository {
   /// a administradora escolhe ao cadastrar um produto novo.
   List<String> fotos();
 
-  /// Lê o catálogo da API (MySQL), que só devolve o que a administradora ativou. Se a API
-  /// estiver fora do ar, cai para assets/catalogo.json, cujas peças vêm desativadas
-  /// (`"ativo": false`): sem a API a vitrine fica vazia, e quem decide o que aparece é a administradora.
-  static Future<CatalogoRepository> carregar() async {
-    Map<String, dynamic> dados;
+  /// Lê o catálogo da API (MySQL), que só devolve o que a administradora ativou, e guarda uma cópia no aparelho.
+  /// Se a API estiver fora do ar, usa a última cópia guardada: o que ela ativou continua aparecendo até ser
+  /// desativado, mesmo depois de fechar e abrir o app. Só se nunca houve cópia cai para assets/catalogo.json,
+  /// cujas peças vêm desativadas (`"ativo": false`): aí a vitrine fica vazia, e quem decide o que aparece é ela.
+  static Future<CatalogoRepository> carregar() async => deJson(await obterDados(
+        api: Api.produtos,
+        cache: CatalogoLocal.ler,
+        guardar: CatalogoLocal.salvar,
+        embutido: () async =>
+            jsonDecode(await rootBundle.loadString('assets/catalogo.json')) as Map<String, dynamic>,
+      ));
+
+  /// A escolha da fonte do catálogo, separada para poder ser testada: API, senão cópia guardada, senão embutido.
+  static Future<Map<String, dynamic>> obterDados({
+    required Future<Map<String, dynamic>> Function() api,
+    required Future<Map<String, dynamic>?> Function() cache,
+    required Future<void> Function(Map<String, dynamic>) guardar,
+    required Future<Map<String, dynamic>> Function() embutido,
+  }) async {
     try {
-      dados = await Api.produtos();
+      final dados = await api();
+      try {
+        await guardar(dados);
+      } catch (e) {
+        debugPrint('Não consegui guardar a cópia do catálogo: $e');
+      }
+      return dados;
     } catch (e) {
-      debugPrint('API indisponível, usando catalogo.json: $e');
-      final bruto = await rootBundle.loadString('assets/catalogo.json');
-      dados = jsonDecode(bruto) as Map<String, dynamic>;
+      debugPrint('API indisponível: $e');
+      return await cache() ?? await embutido();
     }
-    return deJson(dados);
+  }
+
+  /// Atualiza a cópia guardada com o que a API tem agora. A área administrativa chama depois de ativar ou
+  /// desativar peças, para a mudança valer mesmo se o app for reaberto sem a API.
+  static Future<void> atualizarCopiaLocal() async {
+    try {
+      await CatalogoLocal.salvar(await Api.produtos());
+    } catch (e) {
+      debugPrint('Não consegui atualizar a cópia local do catálogo: $e');
+    }
   }
 
   /// Monta o catálogo a partir do JSON. Uma peça com dado inválido (por exemplo,

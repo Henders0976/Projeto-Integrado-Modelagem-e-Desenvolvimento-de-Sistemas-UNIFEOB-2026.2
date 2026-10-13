@@ -2,6 +2,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 
+import '../core/resumo.dart';
 import '../ia/assistente_page.dart';
 import '../models/models.dart';
 import '../services/catalogo_repository.dart';
@@ -14,14 +15,17 @@ import 'componentes.dart';
 import 'contato_page.dart';
 import 'efeitos.dart';
 import 'fundo_liquido.dart';
+import 'linha_tinta.dart';
 import 'meus_pedidos_page.dart';
 import 'novidades.dart';
 import 'peca_page.dart';
 import 'privacidade_page.dart';
+import 'resumo_loja.dart';
 import 'rolagem_suave.dart';
 import 'sacola_page.dart';
 import 'sobre_page.dart';
 import 'tema.dart';
+import 'vitrine.dart';
 
 /// Largura máxima do conteúdo (web e desktop); no celular ocupa a tela toda.
 const _larguraMax = 1100.0;
@@ -48,6 +52,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   Categoria? _filtro; // null = "Todos"
+  bool _grade = false; // false = Vitrine (nomes + foto), true = Grade de cartões (como no site)
   final _chaveColecao = GlobalKey();
   final _chaveComo = GlobalKey();
   final _rolagem = ControladorSuave();
@@ -66,12 +71,25 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  void _abrirPeca(Produto peca) => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => PecaPage(peca: peca, sacola: widget.sacola),
+  void _abrirPeca(Produto peca) {
+    final todas = widget.catalogo.todas();
+    // "Você também pode gostar": as da mesma categoria primeiro, depois as outras, no máximo 3.
+    final parecidas = [
+      ...todas.where((p) => p.categoria == peca.categoria && p.id != peca.id),
+      ...todas.where((p) => p.categoria != peca.categoria),
+    ].take(3).toList();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PecaPage(
+          peca: peca,
+          sacola: widget.sacola,
+          parecidas: parecidas,
+          cartao: (p) => _CartaoPeca(peca: p, aoTocar: () => _abrirPeca(p)),
         ),
-      );
+      ),
+    );
+  }
 
   void _irPara(GlobalKey chave) {
     final alvo = chave.currentContext;
@@ -133,6 +151,20 @@ class _HomePageState extends State<HomePage> {
         ),
       );
 
+  /// Uma linha do índice leva à vitrine já filtrada por aquela categoria.
+  void _escolherCategoria(Categoria c) {
+    setState(() => _filtro = c);
+    _irPara(_chaveColecao);
+  }
+
+  /// Seção da home: centralizada, na largura máxima, com o respiro de cima das demais.
+  Widget _secao(Widget filho) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: _larguraMax),
+          child: Padding(padding: const EdgeInsets.fromLTRB(24, 112, 24, 0), child: filho),
+        ),
+      );
+
   /// Acesso à área administrativa: toque longo no logo. Não aparece para clientes.
   void _abrirAdmin() => Navigator.push(
         context,
@@ -142,6 +174,8 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final pecas = widget.catalogo.porCategoria(_filtro);
+    final todas = widget.catalogo.todas();
+    final resumo = resumirCatalogo(todas);
     final largura = MediaQuery.sizeOf(context).width;
     final lateral = ((largura - _larguraMax) / 2).clamp(0.0, double.infinity) + 24;
     final reduzir = MediaQuery.disableAnimationsOf(context);
@@ -190,7 +224,7 @@ class _HomePageState extends State<HomePage> {
                       textAlign: TextAlign.center),
                 ),
               )
-            else
+            else if (_grade)
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(lateral, 8, lateral, 8),
                 sliver: SliverGrid.builder(
@@ -211,9 +245,35 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
+              )
+            else
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(lateral, 16, lateral, 8),
+                  // A chave inclui o filtro: ao trocar de categoria a vitrine recomeça na primeira peça.
+                  child: Vitrine(
+                    key: ValueKey(_filtro?.name),
+                    pecas: pecas,
+                    aoAbrir: _abrirPeca,
+                    rolagem: _y,
+                  ),
+                ),
               ),
             SliverToBoxAdapter(child: _colecoes(context)),
+            // Índice e guia saem do catálogo e somem junto com as peças (nada a contar sem peça ativa).
+            if (todas.isNotEmpty)
+              SliverToBoxAdapter(
+                child: _secao(IndiceCategorias(resumo: resumo, aoEscolher: _escolherCategoria)),
+              ),
             SliverToBoxAdapter(child: _sobre(context)),
+            if (todas.isNotEmpty)
+              SliverToBoxAdapter(
+                child: _secao(GuiaDaLoja(
+                  resumo: resumo,
+                  aoFalar: () =>
+                      widget.whatsapp.enviar('Olá, RV Label! Gostaria de tirar uma dúvida.'),
+                )),
+              ),
             SliverToBoxAdapter(child: _comoComprar(context)),
             SliverToBoxAdapter(
               child: Padding(
@@ -255,7 +315,7 @@ class _HomePageState extends State<HomePage> {
                           height: _alturaBarra,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Row(children: [
+                            child: TintaNav(child: Row(children: [
                               GestureDetector(
                                 onLongPress: _abrirAdmin,
                                 behavior: HitTestBehavior.opaque,
@@ -296,13 +356,15 @@ class _HomePageState extends State<HomePage> {
                                 icon: const Icon(Icons.auto_awesome),
                                 onPressed: _abrirIa,
                               ),
-                              IconButton(
-                                tooltip: 'Meus pedidos',
-                                icon: const Icon(Icons.receipt_long_outlined),
-                                onPressed: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) => const MeusPedidosPage())),
+                              ItemTinta(
+                                child: IconButton(
+                                  tooltip: 'Meus pedidos',
+                                  icon: const Icon(Icons.receipt_long_outlined),
+                                  onPressed: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) => const MeusPedidosPage())),
+                                ),
                               ),
                               ListenableBuilder(
                                 listenable: widget.sacola,
@@ -311,22 +373,24 @@ class _HomePageState extends State<HomePage> {
                                   child: Badge(
                                     isLabelVisible: !widget.sacola.vazia,
                                     label: Text('${widget.sacola.quantidadeTotal}'),
-                                    child: IconButton(
-                                      tooltip: 'Sacola',
-                                      icon: const Icon(Icons.shopping_bag_outlined),
-                                      onPressed: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => SacolaPage(
-                                              sacola: widget.sacola,
-                                              whatsapp: widget.whatsapp),
+                                    child: ItemTinta(
+                                      child: IconButton(
+                                        tooltip: 'Sacola',
+                                        icon: const Icon(Icons.shopping_bag_outlined),
+                                        onPressed: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => SacolaPage(
+                                                sacola: widget.sacola,
+                                                whatsapp: widget.whatsapp),
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ]),
+                            ])),
                           ),
                         ),
                       ),
@@ -476,37 +540,85 @@ class _HomePageState extends State<HomePage> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 72, 24, 0),
             child: AoRolar(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('A coleção Essence',
-                            style: Theme.of(context).textTheme.headlineMedium),
-                        const SizedBox(height: 10),
-                        const Text(
-                            'Toque numa peça pra abrir em detalhe, virar a foto e '
-                            'escolher a cor. Filtre por categoria logo abaixo.',
-                            style: TextStyle(color: corTextoSuave, fontSize: 16)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    child: Text('$quantidade ${quantidade == 1 ? 'peça' : 'peças'}',
-                        key: ValueKey(quantidade),
-                        style: const TextStyle(
-                            color: corTextoSuave, fontFeatures: _numerosAlinhados)),
-                  ),
-                ],
-              ),
+              child: LayoutBuilder(builder: (context, caixa) {
+                final textos = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('A coleção Essence',
+                        style: Theme.of(context).textTheme.headlineMedium),
+                    const SizedBox(height: 10),
+                    const Text(
+                        'Toque numa peça pra abrir em detalhe, virar a foto e '
+                        'escolher a cor. Filtre por categoria logo abaixo.',
+                        style: TextStyle(color: corTextoSuave, fontSize: 16)),
+                  ],
+                );
+                final contagem = AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: Text('$quantidade ${quantidade == 1 ? 'peça' : 'peças'}',
+                      key: ValueKey(quantidade),
+                      style: const TextStyle(
+                          color: corTextoSuave, fontFeatures: _numerosAlinhados)),
+                );
+                // No celular a contagem e os botões ficam numa linha própria: lado a lado com o texto,
+                // o título se espremia em três linhas.
+                if (caixa.maxWidth < 600) {
+                  return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    textos,
+                    const SizedBox(height: 16),
+                    Row(children: [contagem, const Spacer(), _modo()]),
+                  ]);
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(child: textos),
+                    const SizedBox(width: 16),
+                    contagem,
+                    const SizedBox(width: 16),
+                    _modo(),
+                  ],
+                );
+              }),
             ),
           ),
         ),
       );
+
+  /// Vitrine | Grade: dois botões, o do modo atual aparece cheio.
+  Widget _modo() => Row(mainAxisSize: MainAxisSize.min, children: [
+        for (final (rotulo, icone, grade) in const [
+          ('Vitrine', Icons.view_list, false),
+          ('Grade', Icons.grid_view, true),
+        ])
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Tooltip(
+              message: rotulo,
+              child: Semantics(
+                button: true,
+                selected: _grade == grade,
+                label: rotulo,
+                excludeSemantics: true,
+                child: InkWell(
+                  onTap: () => setState(() => _grade = grade),
+                  borderRadius: BorderRadius.circular(2),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: _grade == grade ? corTexto : Colors.transparent,
+                      border: Border.all(color: _grade == grade ? corTexto : corLinha),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: Icon(icone, size: 18, color: _grade == grade ? corPreto : corTexto),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ]);
 
   Widget _filtros(double lateral) => Padding(
         padding: const EdgeInsets.only(top: 24, bottom: 16),
@@ -532,10 +644,12 @@ class _HomePageState extends State<HomePage> {
         ),
       );
 
-  Widget _linkMenu(String rotulo, VoidCallback aoTocar) => TextButton(
-        onPressed: aoTocar,
-        child: Text(rotulo.toUpperCase(),
-            style: const TextStyle(fontSize: 13, letterSpacing: 2)),
+  Widget _linkMenu(String rotulo, VoidCallback aoTocar) => ItemTinta(
+        child: TextButton(
+          onPressed: aoTocar,
+          child: Text(rotulo.toUpperCase(),
+              style: const TextStyle(fontSize: 13, letterSpacing: 2)),
+        ),
       );
 
   // ---------- coleções: dois cartões grandes com foto ----------
