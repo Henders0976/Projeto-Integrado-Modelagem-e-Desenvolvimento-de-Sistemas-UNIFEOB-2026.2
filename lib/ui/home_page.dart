@@ -15,6 +15,7 @@ import 'componentes.dart';
 import 'contato_page.dart';
 import 'efeitos.dart';
 import 'fundo_liquido.dart';
+import 'linha_tinta.dart';
 import 'meus_pedidos_page.dart';
 import 'novidades.dart';
 import 'peca_page.dart';
@@ -299,7 +300,7 @@ class _HomePageState extends State<HomePage> {
                           height: _alturaBarra,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Row(children: [
+                            child: TintaNav(child: Row(children: [
                               GestureDetector(
                                 onLongPress: _abrirAdmin,
                                 behavior: HitTestBehavior.opaque,
@@ -340,13 +341,15 @@ class _HomePageState extends State<HomePage> {
                                 icon: const Icon(Icons.auto_awesome),
                                 onPressed: _abrirIa,
                               ),
-                              IconButton(
-                                tooltip: 'Meus pedidos',
-                                icon: const Icon(Icons.receipt_long_outlined),
-                                onPressed: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) => const MeusPedidosPage())),
+                              ItemTinta(
+                                child: IconButton(
+                                  tooltip: 'Meus pedidos',
+                                  icon: const Icon(Icons.receipt_long_outlined),
+                                  onPressed: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) => const MeusPedidosPage())),
+                                ),
                               ),
                               ListenableBuilder(
                                 listenable: widget.sacola,
@@ -355,22 +358,24 @@ class _HomePageState extends State<HomePage> {
                                   child: Badge(
                                     isLabelVisible: !widget.sacola.vazia,
                                     label: Text('${widget.sacola.quantidadeTotal}'),
-                                    child: IconButton(
-                                      tooltip: 'Sacola',
-                                      icon: const Icon(Icons.shopping_bag_outlined),
-                                      onPressed: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => SacolaPage(
-                                              sacola: widget.sacola,
-                                              whatsapp: widget.whatsapp),
+                                    child: ItemTinta(
+                                      child: IconButton(
+                                        tooltip: 'Sacola',
+                                        icon: const Icon(Icons.shopping_bag_outlined),
+                                        onPressed: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => SacolaPage(
+                                                sacola: widget.sacola,
+                                                whatsapp: widget.whatsapp),
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ]),
+                            ])),
                           ),
                         ),
                       ),
@@ -576,10 +581,12 @@ class _HomePageState extends State<HomePage> {
         ),
       );
 
-  Widget _linkMenu(String rotulo, VoidCallback aoTocar) => TextButton(
-        onPressed: aoTocar,
-        child: Text(rotulo.toUpperCase(),
-            style: const TextStyle(fontSize: 13, letterSpacing: 2)),
+  Widget _linkMenu(String rotulo, VoidCallback aoTocar) => ItemTinta(
+        child: TextButton(
+          onPressed: aoTocar,
+          child: Text(rotulo.toUpperCase(),
+              style: const TextStyle(fontSize: 13, letterSpacing: 2)),
+        ),
       );
 
   // ---------- coleções: dois cartões grandes com foto ----------
