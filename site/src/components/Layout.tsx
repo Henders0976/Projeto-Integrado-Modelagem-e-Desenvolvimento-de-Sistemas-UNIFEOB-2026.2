@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
+import { ativarRolagemSuave } from "@/lib/rolagemSuave";
 import Footer from "./Footer";
 import Header from "./Header";
 
@@ -14,6 +15,8 @@ function ScrollToTop() {
 }
 
 export default function Layout() {
+  // Roda do mouse desliza em vez de pular, como no app (ControladorSuave).
+  useEffect(() => ativarRolagemSuave(), []);
   return (
     <div className="flex min-h-screen flex-col">
       <ScrollToTop />

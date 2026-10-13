@@ -9,7 +9,7 @@ import FotoPeca from "./FotoPeca";
 
 const DURACAO = 700; // ms da transição galeria -> overlay
 const CURVA = "cubic-bezier(0.76, 0, 0.24, 1)";
-const ALTURA_HERO = "clamp(340px, 62vh, 640px)";
+const ALTURA_HERO = "clamp(380px, 72vh, 760px)";
 
 /** Posição da janela de prévia na tela, no formato de `top/left/right/height` (o que a foto do overlay anima). */
 interface Origem {
@@ -166,7 +166,7 @@ function Detalhe({ peca, origem, aoFechar }: { peca: Peca; origem: Origem; aoFec
           transition: ["top", "left", "right", "height", "border-radius"].map((p) => transicao(p)).join(", "),
         }}
       >
-        <FotoPeca src={peca.fotos[0]} cor={peca.cores[0]} alt="" className="h-full w-full" />
+        <FotoPeca src={peca.fotos[0]} cor={peca.cores[0]} alt="" posicao="50% 18%" className="h-full w-full" />
         <div
           aria-hidden
           className="absolute inset-0 bg-gradient-to-t from-preto/85 via-preto/10 to-black/25"
