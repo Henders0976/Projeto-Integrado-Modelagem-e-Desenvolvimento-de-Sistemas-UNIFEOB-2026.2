@@ -68,12 +68,25 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  void _abrirPeca(Produto peca) => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => PecaPage(peca: peca, sacola: widget.sacola),
+  void _abrirPeca(Produto peca) {
+    final todas = widget.catalogo.todas();
+    // "Você também pode gostar": as da mesma categoria primeiro, depois as outras, no máximo 3.
+    final parecidas = [
+      ...todas.where((p) => p.categoria == peca.categoria && p.id != peca.id),
+      ...todas.where((p) => p.categoria != peca.categoria),
+    ].take(3).toList();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PecaPage(
+          peca: peca,
+          sacola: widget.sacola,
+          parecidas: parecidas,
+          cartao: (p) => _CartaoPeca(peca: p, aoTocar: () => _abrirPeca(p)),
         ),
-      );
+      ),
+    );
+  }
 
   void _irPara(GlobalKey chave) {
     final alvo = chave.currentContext;
