@@ -7,6 +7,8 @@
 App da loja de roupas **RV Label**, coleção **Essence**, feito em Flutter/Dart para Android, iOS, web e Windows.
 Projeto Integrado de Modelagem e Desenvolvimento de Sistemas, UNIFEOB 2026.2.
 
+O repositório tem três partes, cada uma com a sua pasta: o **app** (Flutter, na raiz), o **site** da loja ([`site/`](site/), React) e a **API** de pedidos e do painel ([`api/`](api/), Node + MySQL). Versão atual do app: **1.2.1**. O que mudou em cada versão está no [`CHANGELOG.md`](CHANGELOG.md).
+
 ## Baixar o app (Windows)
 
 Pegue o `.zip` da versão mais recente em **[Releases](../../releases/latest)**.
@@ -20,14 +22,15 @@ Sem o servidor (veja [Servidor e banco](#servidor-e-banco)) o app mostra a últi
 
 ## O que o app faz
 
-- **Vitrine** com a coleção Essence, filtro por categoria e página de cada peça (cor, tamanho, foto de frente e de costas).
-- **Coleções**, páginas **Sobre** e **Contato** e a faixa **Novidades RV**, com navegação Loja / Sobre / Contato.
+- **Vitrine** com a coleção Essence em duas visões, que se alternam em **Vitrine | Grade**: a lista de nomes com a foto da peça ao passar o mouse, e a grade de cartões. Filtro por categoria e página de cada peça (cor, tamanho, foto de frente e de costas), que termina em "Você também pode gostar".
+- **Página inicial** com o índice por categoria ("Tudo o que a Essence tem hoje") e o guia "Antes de escolher" (tamanhos, cores, preços e atendimento), os mesmos do site.
+- **Coleções**, páginas **Sobre** e **Contato** e a faixa **Novidades RV**, com navegação Loja / Sobre / Contato e uma linha animada sob a opção do cabeçalho em que o mouse está.
 - **Sacola** e fechamento do pedido pelo **WhatsApp**. O formulário de Contato e as Novidades também seguem pelo WhatsApp.
 - **Meus pedidos:** o cliente acompanha o andamento com o número do pedido e o telefone.
-- **Área administrativa** com login: pedidos (com indicadores de vendas), preços, estoque, o que aparece na loja e cadastro de produtos.
+- **Área administrativa** com login: pedidos (com indicadores de vendas), preços, estoque, o que aparece na loja (um produto por vez ou vários de uma vez, com "Selecionar vários" e "Selecionar todos") e cadastro de produtos.
 - **Assistente de estilo com IA** (GenUI + Firebase AI Logic).
 - **Animações ligadas à rolagem** (scroll-linked, parallax nas fotos), **rolagem suave** com a roda do mouse e fundo líquido animado (shader).
-- Tela de **privacidade e termos** (LGPD).
+- Tela de **privacidade e termos** (LGPD), com a identificação da loja (CNPJ 68.647.856/0001-97) e o e-mail de contato `suporte.rvlabel@gmail.com`, que também aparecem no rodapé. O site mostra os mesmos dados.
 - O catálogo fica em `assets/catalogo.json` e as fotos em `assets/fotos/`. **Todas as peças vêm desativadas no app** (`"ativo": false`): quem decide o que aparece na loja do app é a administradora, pelo painel (veja [Catálogo desativado](#catálogo-desativado)).
 
 ## Como rodar (desenvolvimento)
@@ -58,7 +61,7 @@ Rotas que o app usa:
 
 | Rota | Quem usa | Para quê |
 |---|---|---|
-| `GET /produtos` | público | só as peças que a administradora ativou (se a API falhar, o app abre sem peças) |
+| `GET /produtos` | público | só as peças que a administradora ativou (o app guarda uma cópia; se a API falhar, usa a cópia) |
 | `POST /pedidos` | público | registrar o pedido |
 | `GET /pedidos/:id?telefone=` | público | consultar o andamento (exige os dois dados) |
 | `GET /saude` | monitor | 200 se a API alcança o banco, 503 se não |
@@ -116,7 +119,7 @@ Em `lib/main.dart`, troque o número fictício (`5511999990000`) pelo da loja: D
 flutter build windows --release
 ```
 
-O executável sai em `build/windows/x64/runner/Release/`. Para distribuir, leve a pasta inteira (o `.exe`, as DLLs e a pasta `data`) mais as DLLs do Visual C++ (`msvcp140.dll`, `vcruntime140.dll` e `vcruntime140_1.dll`) no mesmo diretório. O pacote pronto da última versão fica em [`release/`](release/) e nas [Releases](../../releases).
+O executável sai em `build/windows/x64/runner/Release/`. Para distribuir, leve a pasta inteira (o `.exe`, as DLLs e a pasta `data`) mais as DLLs do Visual C++ (`msvcp140.dll`, `vcruntime140.dll` e `vcruntime140_1.dll`) no mesmo diretório. O pacote `.zip` pronto de cada versão (com as DLLs e o `LEIA-ME.txt`) fica nas [Releases](../../releases); a pasta [`release/`](release/) só guarda o da 1.1.1, e os pacotes novos que você gerar ali não são versionados.
 
 ## Ícone do app
 
@@ -132,7 +135,8 @@ Além do app, o repositório tem uma **versão para site** da loja, na pasta [`s
 
 - **React 18 + Vite + TypeScript + Tailwind**, com poucas dependências.
 - Mesmo catálogo, mesmas fotos, mesma fonte e mesmas cores do app. `npm run sync` copia `assets/catalogo.json`, as fotos, as fontes e os ícones do app para `site/public/`.
-- **Páginas:** Início, Loja, Peça, Sacola, Coleções, Sobre, Contato, Novidades, Meus pedidos e Privacidade/termos. A **área administrativa fica só no app**.
+- **Páginas:** Início (com o resumo da coleção por categoria e o guia "Antes de escolher"), Loja, Peça, Sacola, Coleções, Sobre, Contato, Novidades, Meus pedidos e Privacidade/termos (com CNPJ e e-mail de contato). A **área administrativa fica só no app**.
+- **Vitrine sempre completa:** vem do `catalogo.json`, com ou sem API, e ignora o campo `ativo` (veja [Catálogo desativado](#catálogo-desativado)).
 - **Loja** com filtro por categoria e duas visões: a **vitrine** (lista de nomes com a prévia da foto e uma transição que abre a peça em tela cheia) e a **grade**.
 - **Fechamento de pedido** pelo WhatsApp, com a mesma mensagem do app. Se houver a API (a mesma das rotas `POST /pedidos` e `GET /pedidos/:id`), o pedido também é gravado no banco.
 - **Animações ligadas à rolagem** (scroll-linked, parallax nas fotos), que respeitam "reduzir movimento" do sistema.
@@ -160,15 +164,18 @@ O resultado do build pode ser publicado de graça em Cloudflare Pages, Netlify o
 ```
 lib/
   main.dart            ponto de entrada e número do WhatsApp
-  core/                moeda, indicadores de vendas, App Check
+  core/                moeda, indicadores de vendas, resumo do catálogo, ativação em lote, App Check
   models/              Produto, Peca, Acessorio, Categoria, VarianteCor...
-  services/            API, catálogo, sacola, WhatsApp
+  services/            API, catálogo (com a cópia local), sacola, WhatsApp, dados da loja
   ui/                  telas, componentes, efeitos e rolagem suave
   ia/                  Assistente de IA
 assets/                catálogo, fotos, fontes e ícone
+api/                   API Node + MySQL (pedidos e painel), migrações e backup
+site/                  versão para site (React)
 docs/                  documentação do projeto
-release/               pacote pronto do app (Windows)
-test/                  testes automatizados
+release/               pacote da 1.1.1 (os novos saem nas Releases)
+test/                  testes automatizados do app
+.github/workflows/     CI: testes do site, da API e do app em todo PR
 ```
 
 ## Documentação
@@ -176,9 +183,14 @@ test/                  testes automatizados
 - [Diagrama de classes](docs/diagrama-de-classes.md): as classes do app e onde aparece cada requisito de orientação a objetos.
 - [Decisões do projeto](docs/decisoes.md): o que foi escolhido e por quê.
 - [Evolução futura](docs/evolucao-futura.md): o que pode vir depois.
+- [Histórico de mudanças](CHANGELOG.md): o que mudou em cada versão do app e o que ainda não foi lançado no site e na API.
 
 ## Testes
 
 ```bash
-flutter test
+flutter test                              # app (na raiz)
+cd site && npm test                       # site
+cd api && npm run test:unit && npm run test:migrar   # API, só com o MySQL; `npm test` exige a API no ar (veja api/COMO-RODAR.md)
 ```
+
+Os três conjuntos rodam sozinhos no GitHub Actions em todo PR e em todo envio para a `main` (`.github/workflows/ci.yml`).
