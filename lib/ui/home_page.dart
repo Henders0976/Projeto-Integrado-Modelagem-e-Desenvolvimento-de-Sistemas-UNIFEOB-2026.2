@@ -25,6 +25,7 @@ import 'rolagem_suave.dart';
 import 'sacola_page.dart';
 import 'sobre_page.dart';
 import 'tema.dart';
+import 'vitrine.dart';
 
 /// Largura máxima do conteúdo (web e desktop); no celular ocupa a tela toda.
 const _larguraMax = 1100.0;
@@ -51,6 +52,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   Categoria? _filtro; // null = "Todos"
+  bool _grade = false; // false = Vitrine (nomes + foto), true = Grade de cartões (como no site)
   final _chaveColecao = GlobalKey();
   final _chaveComo = GlobalKey();
   final _rolagem = ControladorSuave();
@@ -222,7 +224,7 @@ class _HomePageState extends State<HomePage> {
                       textAlign: TextAlign.center),
                 ),
               )
-            else
+            else if (_grade)
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(lateral, 8, lateral, 8),
                 sliver: SliverGrid.builder(
@@ -241,6 +243,19 @@ class _HomePageState extends State<HomePage> {
                       peca: pecas[i],
                       aoTocar: () => _abrirPeca(pecas[i]),
                     ),
+                  ),
+                ),
+              )
+            else
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(lateral, 16, lateral, 8),
+                  // A chave inclui o filtro: ao trocar de categoria a vitrine recomeça na primeira peça.
+                  child: Vitrine(
+                    key: ValueKey(_filtro?.name),
+                    pecas: pecas,
+                    aoAbrir: _abrirPeca,
+                    rolagem: _y,
                   ),
                 ),
               ),
@@ -550,12 +565,49 @@ class _HomePageState extends State<HomePage> {
                         style: const TextStyle(
                             color: corTextoSuave, fontFeatures: _numerosAlinhados)),
                   ),
+                  const SizedBox(width: 16),
+                  _modo(),
                 ],
               ),
             ),
           ),
         ),
       );
+
+  /// Vitrine | Grade: dois botões, o do modo atual aparece cheio.
+  Widget _modo() => Row(mainAxisSize: MainAxisSize.min, children: [
+        for (final (rotulo, icone, grade) in const [
+          ('Vitrine', Icons.view_list, false),
+          ('Grade', Icons.grid_view, true),
+        ])
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Tooltip(
+              message: rotulo,
+              child: Semantics(
+                button: true,
+                selected: _grade == grade,
+                label: rotulo,
+                excludeSemantics: true,
+                child: InkWell(
+                  onTap: () => setState(() => _grade = grade),
+                  borderRadius: BorderRadius.circular(2),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: _grade == grade ? corTexto : Colors.transparent,
+                      border: Border.all(color: _grade == grade ? corTexto : corLinha),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: Icon(icone, size: 18, color: _grade == grade ? corPreto : corTexto),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ]);
 
   Widget _filtros(double lateral) => Padding(
         padding: const EdgeInsets.only(top: 24, bottom: 16),
