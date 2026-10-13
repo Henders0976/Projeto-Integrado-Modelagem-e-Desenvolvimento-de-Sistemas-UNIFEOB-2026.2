@@ -1,16 +1,19 @@
 import { ArrowRight, Gem, Layers, MessageCircle, Shirt, ShoppingBag } from "lucide-react";
-import type { CSSProperties } from "react";
+import { useMemo, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import CartaoColecao from "@/components/CartaoColecao";
 import CartaoPeca from "@/components/CartaoPeca";
 import { AoRolar, ParallaxFoto } from "@/components/Efeitos";
 import FotoPeca from "@/components/FotoPeca";
+import GuiaDaLoja from "@/components/GuiaDaLoja";
+import IndiceCategorias from "@/components/IndiceCategorias";
 import Novidades from "@/components/Novidades";
 import { useCatalogo } from "@/context/Catalogo";
 import { useTitulo } from "@/hooks/useTitulo";
 import { precoTexto } from "@/lib/catalogo";
 import { COLECOES, pecasDaColecao, primeiraFoto } from "@/lib/colecoes";
 import { formatarReais } from "@/lib/formato";
+import { resumirCatalogo } from "@/lib/resumo";
 
 const FAIXA = ["Coleção Essence", "Peças únicas", "Pequenos lotes", "Feito com carinho"];
 
@@ -38,6 +41,7 @@ export default function Home() {
   const fotoApoio = comFoto[comFoto.length - 1]?.fotos[0];
   // Catálogo carregado e sem nenhuma peça ativa (a administradora ainda não ligou nenhuma): a Home não promete peças.
   const semPecas = !carregando && !erro && pecas.length === 0;
+  const resumo = useMemo(() => resumirCatalogo(pecas), [pecas]);
 
   return (
     <>
@@ -45,8 +49,7 @@ export default function Home() {
       <section className="mx-auto max-w-[1100px] px-6 pb-14 pt-36">
         <div className="grid items-center gap-14 lg:grid-cols-[5fr_4fr]">
           <div>
-            <p className="intro text-[13px] tracking-[0.35em] text-suave">COLEÇÃO</p>
-            <h1 className="intro mt-3.5 text-[50px] leading-[1.02] tracking-[-0.03em] lg:text-[76px]" style={atraso(120)}>
+            <h1 className="intro text-[50px] leading-[1.02] tracking-[-0.03em] lg:text-[76px]" style={atraso(120)}>
               RV·LABEL Essence
             </h1>
             <p className="intro mt-6 max-w-[520px] text-[17px] leading-[1.55]" style={atraso(260)}>
@@ -145,6 +148,9 @@ export default function Home() {
         </section>
       )}
 
+      {/* O que há em cada categoria (vem do catálogo; some junto com as peças) */}
+      {!semPecas && <IndiceCategorias resumo={resumo} />}
+
       {/* Sobre */}
       <section className="mx-auto max-w-[1100px] px-6 pt-28" aria-labelledby="sobre-titulo">
         <div className="grid gap-12 lg:grid-cols-[5fr_4fr] lg:gap-16">
@@ -178,6 +184,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Tamanhos, cores, preços e atendimento (vem do catálogo; some junto com as peças) */}
+      {!semPecas && <GuiaDaLoja resumo={resumo} />}
 
       {/* Como comprar */}
       <section id="como-comprar" className="mx-auto max-w-[1100px] scroll-mt-24 px-6 pt-28" aria-labelledby="como-titulo">

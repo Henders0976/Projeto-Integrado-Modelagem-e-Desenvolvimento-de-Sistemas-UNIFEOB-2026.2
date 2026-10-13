@@ -1,19 +1,27 @@
 import { ClipboardList, Menu, ShoppingBag, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useSacola } from "@/context/Sacola";
 
-const LINKS = [
-  { to: "/loja", rotulo: "Loja" },
-  { to: "/sobre", rotulo: "Sobre" },
-  { to: "/contato", rotulo: "Contato" },
+interface Opcao {
+  to: string;
+  /** Outras rotas que também são desta opção. */
+  tambem: string[];
+}
+
+const LINKS: (Opcao & { rotulo: string })[] = [
+  // Peça e coleção fazem parte da loja: a linha fica sob "Loja" nelas também, em vez de a barra ficar sem escolha.
+  { to: "/loja", rotulo: "Loja", tambem: ["/peca", "/colecoes"] },
+  { to: "/sobre", rotulo: "Sobre", tambem: [] },
+  { to: "/contato", rotulo: "Contato", tambem: [] },
 ];
 const PEDIDOS = "/meus-pedidos";
 const SACOLA = "/sacola";
-const OPCOES = [...LINKS.map((l) => l.to), PEDIDOS, SACOLA];
+const OPCOES: Opcao[] = [...LINKS, { to: PEDIDOS, tambem: [] }, { to: SACOLA, tambem: [] }];
 
-/** Mesma regra do NavLink: a opção vale para a própria rota e para o que vem embaixo dela. */
-const eDaOpcao = (pathname: string, to: string): boolean => pathname === to || pathname.startsWith(`${to}/`);
+const dentroDe = (pathname: string, base: string): boolean => pathname === base || pathname.startsWith(`${base}/`);
+/** A opção vale para a própria rota, para o que vem embaixo dela e para as rotas em `tambem`. */
+const eDaOpcao = (pathname: string, o: Opcao): boolean => [o.to, ...o.tambem].some((base) => dentroDe(pathname, base));
 
 /** Onde a linha das opções está: x e largura na caixa do cabeçalho; `deslizar` só se ela já estava visível. */
 interface Barra {
@@ -37,8 +45,10 @@ export default function Header() {
   const caixa = useRef<HTMLDivElement>(null);
   const [alvo, setAlvo] = useState<string | null>(null);
   const [barra, setBarra] = useState<Barra>({ x: 0, y: 0, w: 1, visivel: false, deslizar: false });
-  const ativa = OPCOES.find((to) => eDaOpcao(pathname, to)) ?? null;
+  const ativa = OPCOES.find((o) => eDaOpcao(pathname, o))?.to ?? null;
   const destino = alvo ?? ativa;
+  // Leitor de tela: "page" na própria página da opção; "true" numa página que pertence a ela (uma peça, em "Loja").
+  const atual = (to: string) => (pathname === to ? ("page" as const) : ativa === to ? ("true" as const) : undefined);
   // A medição atrasada (fontes carregando, redimensionar) lê o destino de AGORA, não o de quando foi agendada.
   const destinoAtual = useRef(destino);
   destinoAtual.current = destino;
@@ -140,16 +150,16 @@ export default function Header() {
 
         <nav className="ml-auto hidden items-center gap-1 md:flex" aria-label="Principal">
           {LINKS.map((l) => (
-            <NavLink
+            <Link
               key={l.to}
               to={l.to}
               {...escolher(l.to)}
-              className={({ isActive }) =>
-                `px-3 py-2 text-[13px] uppercase tracking-[0.2em] transition-colors ${isActive ? "text-texto" : "text-suave hover:text-texto"}`
-              }
+              aria-current={atual(l.to)}
+              // A cor segue a linha: só a opção escolhida (sob a linha) fica clara; as outras ficam em segundo plano.
+              className={`px-3 py-2 text-[13px] uppercase tracking-[0.2em] transition-colors ${destino === l.to ? "text-texto" : "text-suave"}`}
             >
               <span data-medida>{l.rotulo}</span>
-            </NavLink>
+            </Link>
           ))}
         </nav>
 
@@ -157,6 +167,7 @@ export default function Header() {
           <Link
             to={PEDIDOS}
             {...escolher(PEDIDOS)}
+            aria-current={atual(PEDIDOS)}
             aria-label="Meus pedidos"
             className="flex h-11 w-11 items-center justify-center rounded transition hover:bg-white/10 active:scale-90"
           >
@@ -165,6 +176,7 @@ export default function Header() {
           <Link
             to={SACOLA}
             {...escolher(SACOLA)}
+            aria-current={atual(SACOLA)}
             aria-label={`Sacola${quantidade ? `, ${quantidade} ${quantidade === 1 ? "item" : "itens"}` : ""}`}
             className="relative flex h-11 w-11 items-center justify-center rounded transition hover:bg-white/10 active:scale-90"
           >
@@ -205,18 +217,17 @@ export default function Header() {
       {menu && (
         <nav className="painel-menu border-t border-linha bg-preto/90 px-6 py-4 md:hidden" aria-label="Menu">
           {LINKS.map((l, i) => (
-            <NavLink
+            <Link
               key={l.to}
               to={l.to}
+              aria-current={atual(l.to)}
               style={{ "--atraso": `${60 + i * 55}ms` } as CSSProperties}
-              className={({ isActive }) =>
-                `item-menu relative block py-3 pl-4 text-sm uppercase tracking-[0.2em] transition-colors before:absolute before:left-0 before:top-1/2 before:h-4 before:w-0.5 before:-translate-y-1/2 before:bg-texto before:transition-transform before:duration-300 before:content-[''] ${
-                  isActive ? "text-texto before:scale-y-100" : "text-suave before:scale-y-0"
-                }`
-              }
+              className={`item-menu relative block py-3 pl-4 text-sm uppercase tracking-[0.2em] transition-colors before:absolute before:left-0 before:top-1/2 before:h-4 before:w-0.5 before:-translate-y-1/2 before:bg-texto before:transition-transform before:duration-300 before:content-[''] ${
+                ativa === l.to ? "text-texto before:scale-y-100" : "text-suave before:scale-y-0"
+              }`}
             >
               {l.rotulo}
-            </NavLink>
+            </Link>
           ))}
         </nav>
       )}
