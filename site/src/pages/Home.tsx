@@ -63,24 +63,25 @@ export default function Home() {
             </div>
           </div>
 
-          {destaque && (
+          {/* Enquanto o catálogo carrega, a moldura (mesma proporção 4:5) já ocupa o lugar: sem isso o cartão chega e empurra a página toda para baixo. */}
+          {(destaque || carregando) && (
             <div className="intro mb-4 mr-4" style={atraso(300)}>
               <div className="relative">
                 <div aria-hidden className="absolute inset-0 translate-x-4 translate-y-4 rounded border border-linha" />
-                <Link
-                  to={`/peca/${destaque.id}`}
-                  className="relative block aspect-[4/5] overflow-hidden rounded"
-                  aria-label={`${destaque.nome}, ${precoTexto(destaque, formatarReais)}. Abrir peça`}
-                >
-                  <ParallaxFoto className="h-full w-full" intensidade={18} escala={1.12}>
-                    <FotoPeca src={destaque.fotos[0]} cor={destaque.cores[0]} alt="" loading="eager" className="h-full w-full" />
-                  </ParallaxFoto>
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent from-55% to-preto/85" />
-                  <div className="absolute inset-x-5 bottom-5">
-                    <p className="font-titulo text-2xl leading-tight">{destaque.nome}</p>
-                    <p className="mt-1 tabular-nums text-suave">{precoTexto(destaque, formatarReais)}</p>
-                  </div>
-                </Link>
+                {destaque ? (
+                  <Link to={`/peca/${destaque.id}`} className="relative block aspect-[4/5] overflow-hidden rounded">
+                    <ParallaxFoto className="h-full w-full" intensidade={18} escala={1.12}>
+                      <FotoPeca src={destaque.fotos[0]} cor={destaque.cores[0]} alt="" loading="eager" className="h-full w-full" />
+                    </ParallaxFoto>
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent from-55% to-preto/85" />
+                    <div className="absolute inset-x-5 bottom-5">
+                      <p className="font-titulo text-2xl leading-tight">{destaque.nome}</p>
+                      <p className="mt-1 tabular-nums text-suave">{precoTexto(destaque, formatarReais)}</p>
+                    </div>
+                  </Link>
+                ) : (
+                  <div aria-hidden className="relative aspect-[4/5] rounded bg-white/5" />
+                )}
               </div>
             </div>
           )}

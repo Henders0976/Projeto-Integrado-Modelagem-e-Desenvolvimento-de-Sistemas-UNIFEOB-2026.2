@@ -82,7 +82,8 @@ export default function Loja() {
         </div>
       </div>
 
-      {carregando && <p className="mt-8 text-suave">Carregando a coleção…</p>}
+      {/* min-h: a página curta deixaria o rodapé na tela, e a lista, ao chegar, o empurraria para baixo. */}
+      {carregando && <p className="mt-8 min-h-[100svh] text-suave">Carregando a coleção…</p>}
       {erro && <p role="alert" className="mt-8 text-suave">Não consegui carregar o catálogo agora. Tente recarregar a página.</p>}
       {!carregando && !erro && lista.length === 0 && <p className="mt-8 text-center text-suave">Ainda não temos peças nessa categoria.</p>}
 

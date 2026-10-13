@@ -25,7 +25,7 @@ export default function Peca() {
   const [lado, setLado] = useState<"frente" | "costas">("frente");
   useTitulo(peca?.nome);
 
-  if (carregando) return <p className="mx-auto max-w-[1000px] px-6 pt-36 text-suave">Carregando…</p>;
+  if (carregando) return <p className="mx-auto min-h-[100svh] max-w-[1000px] px-6 pt-36 text-suave">Carregando…</p>;
   if (!peca) return <NaoEncontrada />;
 
   const cor = peca.cores[Math.min(corIdx, peca.cores.length - 1)];
