@@ -29,18 +29,19 @@ Segue o formato do [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - A migração `001` guarda nome e telefone no pedido e tira a máscara do telefone das clientes (`(35) 99999-9999` vira
   `35999999999`); sem isso os pedidos antigos não apareciam na consulta.
 
-### App
-- O catálogo vem todo desativado: a administradora decide o que aparece no app pelo painel.
-- O app ganhou as mesmas peças de interface que o site já tinha: vitrine em lista com a foto ao passar o mouse (com
-  alternância Vitrine | Grade), índice por categoria ("Tudo o que a Essence tem hoje"), guia "Antes de escolher",
-  "Você também pode gostar" na página da peça e a linha de tinta animada no cabeçalho.
-- Diferença conhecida: no site, abrir uma peça da vitrine abre um detalhe em tela cheia com a foto se expandindo; no app,
-  abre a página da peça, com a foto voando do cartão (Hero) até ela.
-
 ### Projeto
 - CI no GitHub Actions: testes do site, da API (com MySQL) e do app em todo PR.
 - `README` com a seção do site e do catálogo desativado; este `CHANGELOG`.
 - O `.gitignore` da raiz deixou de ser versionado (os de `android/`, `api/`, `ios/`, `site/` e `windows/` continuam).
+
+## 1.2.0 — 2026-10-13
+- O catálogo vem todo desativado: a administradora decide o que aparece no app pelo painel.
+- O app ganhou as mesmas peças de interface que o site já tinha: vitrine em lista com a foto ao passar o mouse (com
+  alternância Vitrine | Grade), índice por categoria ("Tudo o que a Essence tem hoje"), guia "Antes de escolher",
+  "Você também pode gostar" na página da peça e a linha de tinta animada no cabeçalho.
+- Privacidade com identificação do responsável (CNPJ) e e-mail de contato, e CNPJ e e-mail no rodapé.
+- Diferença conhecida em relação ao site: lá, abrir uma peça da vitrine abre um detalhe em tela cheia com a foto se
+  expandindo; no app, abre a página da peça, com a foto voando do cartão (Hero) até ela.
 
 ## 1.1.1 — 2026-10-10
 - Ícone novo do aplicativo: o letreiro RV·LABEL, em Windows, Android, iOS e web.
