@@ -28,4 +28,3 @@ O app já cobre vitrine, sacola, fechamento pelo WhatsApp, acompanhamento de ped
 
 - Mais testes automatizados, principalmente nas telas de sacola e de administração.
 - Publicar o app nas lojas (Android e iOS) e em um endereço web, com o domínio da marca.
-- Trocar o identificador provisório do pacote (`com.example`) por um da marca antes de publicar.

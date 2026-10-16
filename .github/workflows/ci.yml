@@ -87,3 +87,20 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
+
+  android:
+    name: App Android (build do APK)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      # Sem android/key.properties sai assinado com a chave de debug: o job só confere que o Gradle e o pacote compilam.
+      - run: flutter build apk --release

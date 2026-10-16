@@ -29,6 +29,31 @@ Admin (Bearer token de `POST /admin/login`): `GET/POST /admin/produtos`, `PATCH 
 - Limite conhecido: os contadores (limites e bloqueio de login) ficam em memória, zeram ao reiniciar e não são compartilhados entre servidores. Com mais de um servidor, troque por um contador compartilhado (Redis, por exemplo).
 - `/pedidos` e `/admin` respondem com `Cache-Control: no-store`: têm dado pessoal.
 
+## Hospedar (Render + Aiven, grátis)
+A API roda no **Render** (plano free) e o banco no **Aiven** (MySQL free). As senhas ficam só nos painéis dos dois, nunca no git.
+No plano free a API "dorme" depois de 15 minutos sem uso: a primeira chamada depois disso demora cerca de 50 segundos.
+
+1. **Banco (Aiven):** em [aiven.io](https://aiven.io), crie um serviço *MySQL* no plano *Free*. Na página do serviço, anote
+   *Host*, *Port*, *User* (`avnadmin`) e *Password*, e baixe o *CA certificate* (`ca.pem`) para esta pasta (`api/`; o
+   `.gitignore` já ignora `*.pem`).
+2. **Levar os dados atuais** (peças ativadas, conta da administradora e pedidos). No PC, com o MySQL local ligado:
+   ```bash
+   npm run backup
+   mysql --host=HOST --port=PORTA --user=avnadmin -p --ssl-mode=VERIFY_CA --ssl-ca=ca.pem -e "CREATE DATABASE IF NOT EXISTS Rv_Label CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+   mysql --host=HOST --port=PORTA --user=avnadmin -p --ssl-mode=VERIFY_CA --ssl-ca=ca.pem Rv_Label < backups/O-MAIS-RECENTE.sql
+   ```
+   Banco do zero, em vez disso: rode o `schema.sql` com o mesmo comando `mysql` (sem o `Rv_Label` no fim) e depois
+   `npm run seed` e `npm run admin` com um `.env` apontando para o Aiven (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`,
+   `DB_SSL_CA` com o conteúdo do `ca.pem`).
+3. **API (Render):** em [render.com](https://render.com), *New > Blueprint*, escolha este repositório. O Render lê o
+   `render.yaml` da raiz e pede os valores secretos: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_SSL_CA` (cole o
+   conteúdo inteiro do `ca.pem`) e `CORS_ORIGIN` (o endereço do site no Netlify, ex.: `https://rvlabel.netlify.app`). O
+   `JWT_SECRET` é gerado sozinho. A cada deploy ele roda `npm run migrar` e depois `npm start`.
+4. **Conferir:** `https://SEU-SERVICO.onrender.com/saude` deve responder 200.
+5. **Site (Netlify):** em *Site configuration > Environment variables*, defina `VITE_API_URL` com o endereço do Render e
+   `VITE_WHATSAPP` com o número da loja; depois *Deploys > Trigger deploy*.
+6. **App:** gere com `--dart-define=API_URL=https://SEU-SERVICO.onrender.com` (veja o README).
+
 ## Backup
 `npm run backup` gera `backups/Rv_Label-AAAA-MM-DD-HH-MM.sql` com o `mysqldump` e guarda os 14 mais recentes (`BACKUP_MANTER` muda isso). Se o programa não estiver no PATH, defina `MYSQLDUMP` com o caminho dele. A pasta `backups/` está no `.gitignore`: tem telefone e CPF das clientes e **nunca** vai para o GitHub. Agende o comando todo dia (cron ou Agendador de Tarefas) e copie a pasta para fora da máquina. Para restaurar: `mysql -u root -p Rv_Label < backups/arquivo.sql`.
 

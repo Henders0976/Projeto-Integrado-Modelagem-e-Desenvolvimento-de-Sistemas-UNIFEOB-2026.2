@@ -50,7 +50,9 @@ Só com isso o app já abre. O Assistente de IA e a parte do servidor são opcio
 
 Pedidos, "Meus pedidos", o login e o painel administrativo conversam com uma API Node.js + MySQL (banco `Rv_Label`). O código dessa API está na pasta [`api/`](api/), mas **as credenciais e o `.env` nunca são versionados**: copie `api/.env.example` para `api/.env` e preencha `DB_USER`, `DB_PASSWORD` e `JWT_SECRET` (um texto aleatório com 48+ caracteres). O passo a passo (criar o banco, popular o catálogo e definir a senha da administradora) está em [`api/COMO-RODAR.md`](api/COMO-RODAR.md).
 
-O app procura a API em `http://localhost:3000`. Para outro endereço:
+Para pôr a API no ar de graça (Render + banco no Aiven), siga a seção "Hospedar" de [`api/COMO-RODAR.md`](api/COMO-RODAR.md); o `render.yaml` da raiz já descreve o serviço.
+
+O app procura a API em `http://localhost:3000`. Para outro endereço (por exemplo, o do Render na hora de gerar a versão para os clientes):
 
 ```bash
 flutter run -d windows --dart-define=API_URL=http://192.168.0.10:3000
@@ -111,7 +113,7 @@ As chaves do Firebase e o número real do WhatsApp **não ficam no repositório*
 
 ## Número do WhatsApp
 
-Em `lib/main.dart`, troque o número fictício (`5511999990000`) pelo da loja: DDI + DDD + número, só dígitos. Enquanto isso não for feito, o fechamento de pedido, o Contato e as Novidades abrem uma conversa com um número que não existe.
+Em `lib/main.dart`, troque o número fictício (`5511999990000`) pelo da loja: DDI + DDD + número, só dígitos. Enquanto isso não for feito, o fechamento de pedido, o Contato e as Novidades abrem uma conversa com um número que não existe. No site o número vem de `VITE_WHATSAPP`.
 
 ## Gerar o app de Windows
 
@@ -120,6 +122,21 @@ flutter build windows --release
 ```
 
 O executável sai em `build/windows/x64/runner/Release/`. Para distribuir, leve a pasta inteira (o `.exe`, as DLLs e a pasta `data`) mais as DLLs do Visual C++ (`msvcp140.dll`, `vcruntime140.dll` e `vcruntime140_1.dll`) no mesmo diretório. O pacote `.zip` pronto de cada versão (com as DLLs e o `LEIA-ME.txt`) fica nas [Releases](../../releases); a pasta [`release/`](release/) só guarda o da 1.1.1, e os pacotes novos que você gerar ali não são versionados.
+
+## Gerar o app de Android
+
+O identificador do app é `br.com.rvlabel.app` (Android, iOS e Windows). Para a Play Store, a versão precisa da chave da loja:
+
+1. Gere a chave uma vez (o `keytool` vem com o JDK do Android Studio) e guarde-a **fora do repositório**, com backup:
+   ```bash
+   keytool -genkey -v -keystore C:/chaves/rvlabel.jks -keyalg RSA -keysize 2048 -validity 10000 -alias rvlabel
+   ```
+2. Crie `android/key.properties` (o git ignora) com `storeFile=C:/chaves/rvlabel.jks`, `storePassword=...`,
+   `keyAlias=rvlabel` e `keyPassword=...`.
+3. `flutter build appbundle --release --dart-define=API_URL=https://SEU-SERVICO.onrender.com`
+
+Sem o `key.properties`, a release sai assinada com a chave de debug: instala no celular para teste, mas a Play Store recusa.
+Perder a chave impede atualizar o app já publicado.
 
 ## Ícone do app
 

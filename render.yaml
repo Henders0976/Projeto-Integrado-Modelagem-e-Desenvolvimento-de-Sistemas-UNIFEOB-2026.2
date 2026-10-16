@@ -1,0 +1,35 @@
+# Blueprint do Render (render.com > New > Blueprint): sobe a API da pasta api/ no plano grátis.
+# O banco fica no Aiven (MySQL grátis). Os valores com "sync: false" são pedidos no painel do Render e nunca vão para o git.
+# Passo a passo em api/COMO-RODAR.md, seção "Hospedar (Render + Aiven)".
+services:
+  - type: web
+    name: rvlabel-api
+    runtime: node
+    plan: free
+    rootDir: api
+    buildCommand: npm ci --omit=dev
+    startCommand: npm run migrar && npm start # migrar é idempotente: só aplica o que falta
+    healthCheckPath: /saude
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY # o Render fica na frente da API como proxy
+        value: "1"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DB_NAME
+        value: Rv_Label
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_SSL_CA # conteúdo do ca.pem do Aiven
+        sync: false
+      - key: CORS_ORIGIN # endereço do site no Netlify, ex.: https://rvlabel.netlify.app
+        sync: false

@@ -8,4 +8,6 @@ module.exports = mysql.createPool({
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'Rv_Label',
   decimalNumbers: true, // DECIMAL vira number em vez de string
+  // Banco hospedado (Aiven etc.) exige TLS: DB_SSL_CA = certificado CA em PEM (aceita \n escrito no lugar das quebras).
+  ssl: process.env.DB_SSL_CA ? { ca: process.env.DB_SSL_CA.replace(/\\n/g, '\n') } : undefined,
 });
