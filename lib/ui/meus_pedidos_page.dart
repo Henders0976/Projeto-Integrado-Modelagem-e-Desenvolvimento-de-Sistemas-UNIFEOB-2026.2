@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../core/mascaras.dart';
 import '../core/moeda.dart';
 import '../services/api.dart';
 import '../services/api_admin.dart';
+import 'componentes.dart';
 import 'fundo_liquido.dart';
 import 'rolagem_suave.dart';
+import 'tema.dart';
 
 /// O cliente acompanha o pedido com número + telefone (sem conta).
 class MeusPedidosPage extends StatefulWidget {
@@ -64,27 +68,37 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('Use o número do pedido (enviado no WhatsApp) e o '
-                    'telefone que você informou na compra.'),
-                const SizedBox(height: 12),
-                TextField(
+                const Text(
+                    'Use o número do pedido (enviado no WhatsApp) e o '
+                    'telefone que você informou na compra.',
+                    style: TextStyle(color: RvColors.textSecondary)),
+                const SizedBox(height: RvSpace.xl),
+                RvTextField(
+                  label: 'Número do pedido',
                   controller: _numero,
+                  hint: 'Ex.: 128',
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Número do pedido'),
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 ),
-                TextField(
+                RvTextField(
+                  label: 'Telefone (com DDD)',
                   controller: _telefone,
+                  hint: '(11) 99999-9999',
                   keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(labelText: 'Telefone (com DDD)'),
+                  inputFormatters: const [Mascara(formatarTelefone)],
                   onSubmitted: (_) => _buscar(),
                 ),
-                const SizedBox(height: 16),
-                FilledButton(
-                    onPressed: _carregando ? null : _buscar, child: const Text('Consultar')),
-                if (_carregando) const Padding(
-                    padding: EdgeInsets.only(top: 16), child: LinearProgressIndicator()),
-                if (_erro != null) Padding(
-                    padding: const EdgeInsets.only(top: 16), child: Text(_erro!)),
+                RvButton(label: 'Consultar', loading: _carregando, onPressed: _buscar),
+                if (_erro != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: RvSpace.lg),
+                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Icon(Icons.error_outline, size: 18, color: RvColors.danger),
+                      const SizedBox(width: RvSpace.sm),
+                      Expanded(
+                          child: Text(_erro!, style: const TextStyle(color: RvColors.danger))),
+                    ]),
+                  ),
                 if (p != null) ..._detalhe(context, p),
               ]),
             ),
@@ -98,32 +112,134 @@ class _MeusPedidosPageState extends State<MeusPedidosPage> {
     final status = p['status'] as String;
     final cancelado = status == 'Cancelado';
     final atual = _etapas.indexOf(status);
+    // A API só guarda a data do pedido (etapa "Recebido"); as outras etapas aparecem sem data.
+    final data = DateTime.tryParse('${p['data']}')?.toLocal();
+    String? dataDe(int etapa) => etapa == 0 && data != null
+        ? '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year}'
+        : null;
     return [
-      const SizedBox(height: 24),
-      Text('Pedido nº ${p['id']}', style: Theme.of(context).textTheme.headlineSmall),
-      const SizedBox(height: 12),
-      if (cancelado)
-        const Text('Este pedido foi cancelado.')
-      else
-        for (var i = 0; i < _etapas.length; i++)
-          ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(i <= atual ? Icons.check_circle : Icons.radio_button_unchecked),
-            title: Text(_etapas[i],
-                style: TextStyle(fontWeight: i == atual ? FontWeight.bold : FontWeight.normal)),
-          ),
-      const Divider(height: 32),
-      for (final i in (p['itens'] as List).cast<Map<String, dynamic>>())
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Text('${i['quantidade']}× ${i['nome']} · ${i['cor']} · ${i['tamanho']}'
-              '${i['subtotal'] == null ? ' · a combinar' : ' · ${formatarReais((i['subtotal'] as num).toDouble())}'}'),
+      const SizedBox(height: RvSpace.x2),
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(RvSpace.xl),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Expanded(
+                child: Text('Pedido nº ${p['id']}',
+                    style: Theme.of(context).textTheme.headlineSmall),
+              ),
+              RvStatusBadge(status),
+            ]),
+            const SizedBox(height: RvSpace.xl),
+            if (cancelado)
+              const _Etapa(
+                rotulo: 'Cancelado',
+                data: null,
+                cor: RvColors.danger,
+                feita: true,
+                ultima: true,
+                icone: Icons.cancel,
+              )
+            else
+              for (var i = 0; i < _etapas.length; i++)
+                _Etapa(
+                  rotulo: _etapas[i],
+                  data: dataDe(i),
+                  cor: RvStatusBadge.corDe(_etapas[i]),
+                  feita: i <= atual,
+                  atual: i == atual,
+                  ultima: i == _etapas.length - 1,
+                ),
+            const Divider(height: RvSpace.x2),
+            for (final i in (p['itens'] as List).cast<Map<String, dynamic>>())
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: RvSpace.xs),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(
+                    child: Text('${i['quantidade']}× ${i['nome']}\n${i['cor']} · ${i['tamanho']}',
+                        style: const TextStyle(height: 1.4)),
+                  ),
+                  Text(
+                      i['subtotal'] == null
+                          ? 'a combinar'
+                          : formatarReais((i['subtotal'] as num).toDouble()),
+                      style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()])),
+                ]),
+              ),
+            const SizedBox(height: RvSpace.md),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              const Text('Total'),
+              Flexible(
+                child: Text(
+                    '${formatarReais((p['total'] as num).toDouble())}'
+                    '${p['precoPendente'] == true ? ' + itens a combinar' : ''}',
+                    textAlign: TextAlign.end,
+                    style: RvText.price),
+              ),
+            ]),
+          ]),
         ),
-      const SizedBox(height: 8),
-      Text('Total: ${formatarReais((p['total'] as num).toDouble())}'
-          '${p['precoPendente'] == true ? ' + itens a combinar' : ''}',
-          style: const TextStyle(fontWeight: FontWeight.bold)),
+      ),
     ];
   }
+}
+
+/// Uma etapa da linha do tempo: ponto (cheio se já passou), linha até a próxima, nome e data.
+class _Etapa extends StatelessWidget {
+  const _Etapa({
+    required this.rotulo,
+    required this.data,
+    required this.cor,
+    required this.feita,
+    required this.ultima,
+    this.atual = false,
+    this.icone = Icons.check,
+  });
+
+  final String rotulo;
+  final String? data;
+  final Color cor;
+  final bool feita;
+  final bool atual;
+  final bool ultima;
+  final IconData icone;
+
+  @override
+  Widget build(BuildContext context) => IntrinsicHeight(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          SizedBox(
+            width: 28,
+            child: Column(children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: feita ? cor : Colors.transparent,
+                  border: Border.all(color: feita ? cor : RvColors.border, width: 2),
+                ),
+                child: feita ? Icon(icone, size: 14, color: RvColors.bg) : null,
+              ),
+              if (!ultima)
+                Expanded(
+                  child: Container(
+                      width: 2, color: feita ? cor.withValues(alpha: 0.5) : RvColors.border),
+                ),
+            ]),
+          ),
+          const SizedBox(width: RvSpace.md),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: ultima ? 0 : RvSpace.xl),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(rotulo,
+                    style: TextStyle(
+                        fontWeight: atual ? FontWeight.w700 : FontWeight.w500,
+                        color: feita ? RvColors.textPrimary : RvColors.textMuted)),
+                if (data != null) Text(data!, style: RvText.caption),
+              ]),
+            ),
+          ),
+        ]),
+      );
 }

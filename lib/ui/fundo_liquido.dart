@@ -6,13 +6,14 @@ import 'package:flutter/scheduler.dart';
 import 'tema.dart';
 
 /// Fundo com ondas de líquido que reagem ao mouse/toque.
-/// Degradê vermelho -> preto com ondas de luz e sombra por cima.
+/// Degradê vinho escuro -> preto com ondas de luz e sombra por cima.
 /// Se o shader não carregar, mostra a cor lisa (o app segue normal).
+/// Com "reduzir movimento" ligado no sistema, as ondas não aparecem.
 class FundoLiquido extends StatefulWidget {
   const FundoLiquido({
     super.key,
     required this.child,
-    this.corBase = corVermelho,
+    this.corBase = RvColors.brandDeep,
     this.corSombra = corPreto,
   });
 
@@ -60,6 +61,7 @@ class _FundoLiquidoState extends State<FundoLiquido>
   }
 
   void _marcar(Offset pos, double forca) {
+    if (MediaQuery.disableAnimationsOf(context)) return;
     final anterior = _ultimaPosicao;
     if (anterior != null && forca < 1.5 && (pos - anterior).distance < 14) return;
     _ultimaPosicao = pos;

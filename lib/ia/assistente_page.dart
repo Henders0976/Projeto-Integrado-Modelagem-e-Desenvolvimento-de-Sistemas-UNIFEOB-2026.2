@@ -7,9 +7,11 @@ import 'package:genui/genui.dart' as genui;
 
 import '../services/catalogo_repository.dart';
 import '../services/sacola.dart';
+import '../ui/componentes.dart';
 import '../ui/fundo_liquido.dart';
 import '../ui/message_bubble.dart';
 import '../ui/rolagem_suave.dart';
+import '../ui/tema.dart';
 import 'catalogo_pecas.dart';
 import 'instrucoes.dart';
 
@@ -104,10 +106,11 @@ class _AssistentePageState extends State<AssistentePage> {
     if (resposta.text?.isNotEmpty ?? false) _transport.addChunk(resposta.text!);
   }
 
-  Future<void> _enviar() async {
-    final texto = _texto.text;
+  /// Envia o que está no campo, ou a [sugestao] tocada.
+  Future<void> _enviar([String? sugestao]) async {
+    final texto = sugestao ?? _texto.text;
     if (texto.trim().isEmpty) return;
-    _texto.clear();
+    if (sugestao == null) _texto.clear();
     setState(() => _itens.add(_Texto(texto, doUsuario: true)));
     _rolarParaOFim();
     await _conversa.sendRequest(ChatMessage.user(texto));
@@ -128,59 +131,84 @@ class _AssistentePageState extends State<AssistentePage> {
     super.dispose();
   }
 
+  static const _sugestoes = ['Look para casamento', 'Algo casual', 'Combina com vermelho?'];
+
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: const Text('Assistente RV')),
-        body: FundoLiquido(child: Stack(children: [
-          Column(children: [
-            Expanded(
-              child: ListView(
-                controller: _rolagem,
-                padding: const EdgeInsets.all(16),
-                children: [
-                  if (_itens.isEmpty)
-                    const Text('Oi! Me conta o que você procura '
-                        '(ex.: "um look pra jantar") e eu separo peças pra você.'),
-                  for (final item in _itens)
-                    switch (item) {
-                      _Texto() =>
-                        MessageBubble(text: item.texto, isUser: item.doUsuario),
-                      _Superficie() => Surface(
-                          surfaceContext: _controller.contextFor(item.id)),
-                    },
-                ],
-              ),
-            ),
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: ValueListenableBuilder<ConversationState>(
-                  valueListenable: _conversa.state,
-                  builder: (context, estado, _) => Row(children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _texto,
-                        onSubmitted: estado.isWaiting ? null : (_) => _enviar(),
-                        decoration:
-                            const InputDecoration(hintText: 'Digite sua mensagem'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      onPressed: estado.isWaiting ? null : _enviar,
-                      child: const Text('Enviar'),
-                    ),
-                  ]),
-                ),
-              ),
-            ),
-          ]),
-          ValueListenableBuilder<ConversationState>(
+        body: FundoLiquido(
+          child: ValueListenableBuilder<ConversationState>(
             valueListenable: _conversa.state,
-            builder: (context, estado, _) => estado.isWaiting
-                ? const LinearProgressIndicator()
-                : const SizedBox.shrink(),
+            builder: (context, estado, _) {
+              final jaPerguntou = _itens.any((i) => i is _Texto && i.doUsuario);
+              return Column(children: [
+                Expanded(
+                  child: ListView(
+                    controller: _rolagem,
+                    padding: const EdgeInsets.all(RvSpace.lg),
+                    children: [
+                      if (_itens.isEmpty)
+                        const MessageBubble(
+                            text: 'Oi! Me conta o que você procura '
+                                '(ex.: "um look pra jantar") e eu separo peças pra você.',
+                            isUser: false),
+                      for (final item in _itens)
+                        switch (item) {
+                          _Texto() =>
+                            MessageBubble(text: item.texto, isUser: item.doUsuario),
+                          _Superficie() => Surface(
+                              surfaceContext: _controller.contextFor(item.id)),
+                        },
+                      if (estado.isWaiting && jaPerguntou) const Digitando(),
+                    ],
+                  ),
+                ),
+                if (!jaPerguntou)
+                  SizedBox(
+                    height: 52,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: RvSpace.lg),
+                      children: [
+                        for (final s in _sugestoes)
+                          Padding(
+                            padding: const EdgeInsets.only(right: RvSpace.sm),
+                            child: PilulaEscolha(
+                              rotulo: s,
+                              selecionada: false,
+                              aoTocar: () {
+                                if (!estado.isWaiting) _enviar(s);
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                        RvSpace.lg, RvSpace.sm, RvSpace.lg, RvSpace.md),
+                    child: Row(children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _texto,
+                          onSubmitted: estado.isWaiting ? null : (_) => _enviar(),
+                          decoration:
+                              const InputDecoration(hintText: 'Digite sua mensagem'),
+                        ),
+                      ),
+                      const SizedBox(width: RvSpace.sm),
+                      IconButton.filled(
+                        tooltip: 'Enviar',
+                        icon: const Icon(Icons.arrow_upward),
+                        onPressed: estado.isWaiting ? null : _enviar,
+                      ),
+                    ]),
+                  ),
+                ),
+              ]);
+            },
           ),
-        ])),
+        ),
       );
 }

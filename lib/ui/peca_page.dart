@@ -55,6 +55,38 @@ class _PecaPageState extends State<PecaPage> {
     });
   }
 
+  /// Foto em tela cheia: pinça (celular) ou roda do mouse para dar zoom, arrastar para mover.
+  void _ampliar(String foto) => showDialog<void>(
+        context: context,
+        builder: (contexto) => Dialog.fullscreen(
+          backgroundColor: RvColors.bg,
+          child: Stack(children: [
+            Positioned.fill(
+              child: InteractiveViewer(
+                maxScale: 4,
+                child: Center(
+                  child: AspectRatio(
+                    aspectRatio: 3 / 4,
+                    child: fotoOuPlaceholder(foto, variante: _cor),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: RvSpace.lg,
+              right: RvSpace.lg,
+              child: SafeArea(
+                child: IconButton.filledTonal(
+                  tooltip: 'Fechar',
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(contexto),
+                ),
+              ),
+            ),
+          ]),
+        ),
+      );
+
   /// "Você também pode gostar": até 3 peças, primeiro as da mesma categoria.
   Widget _parecidas(BuildContext context, double largura) => Padding(
         padding: const EdgeInsets.only(top: 64, bottom: 8),
@@ -85,7 +117,6 @@ class _PecaPageState extends State<PecaPage> {
   Widget build(BuildContext context) {
     final p = widget.peca;
     final tema = Theme.of(context).textTheme;
-    const numeros = [FontFeature.tabularFigures()];
     // fotoCostas só existe em Peca (subclasse); Acessorio não tem.
     final costas = p is Peca ? p.fotoCostas : null;
     final foto = _verCostas ? costas : p.fotos.firstOrNull;
@@ -93,29 +124,54 @@ class _PecaPageState extends State<PecaPage> {
     final fotoWidget = Column(children: [
       AspectRatio(
         aspectRatio: 3 / 4,
-        child: AnimatedSwitcher(
-          duration: MediaQuery.disableAnimationsOf(context)
-              ? Duration.zero
-              : const Duration(milliseconds: 250),
-          child: KeyedSubtree(
-            key: ValueKey(_verCostas),
-            child: fotoOuPlaceholder(foto,
-                variante: _cor, heroTag: _verCostas ? null : 'foto-${p.id}'),
+        child: Semantics(
+          button: foto != null,
+          label: foto != null ? 'Ampliar foto' : null,
+          child: MouseRegion(
+            cursor: foto != null ? SystemMouseCursors.zoomIn : MouseCursor.defer,
+            child: GestureDetector(
+              onTap: foto == null ? null : () => _ampliar(foto),
+              child: Stack(fit: StackFit.expand, children: [
+                AnimatedSwitcher(
+                  duration: RvMotion.de(context, RvMotion.base),
+                  child: KeyedSubtree(
+                    key: ValueKey(_verCostas),
+                    child: fotoOuPlaceholder(foto,
+                        variante: _cor, heroTag: _verCostas ? null : 'foto-${p.id}'),
+                  ),
+                ),
+                if (foto != null)
+                  const Positioned(
+                    right: RvSpace.md,
+                    bottom: RvSpace.md,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                          color: Color(0xB30B0B0C), shape: BoxShape.circle), // RvColors.bg @ 70%
+                      child: Padding(
+                        padding: EdgeInsets.all(RvSpace.sm),
+                        child: Icon(Icons.zoom_in, size: 20, color: RvColors.textPrimary),
+                      ),
+                    ),
+                  ),
+              ]),
+            ),
           ),
         ),
       ),
       if (costas != null) ...[
-        const SizedBox(height: 12),
+        const SizedBox(height: RvSpace.md),
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          PilulaEscolha(
-              rotulo: 'Frente',
-              selecionada: !_verCostas,
-              aoTocar: () => setState(() => _verCostas = false)),
-          const SizedBox(width: 8),
-          PilulaEscolha(
-              rotulo: 'Costas',
-              selecionada: _verCostas,
-              aoTocar: () => setState(() => _verCostas = true)),
+          for (final (i, (rotulo, f)) in [('Frente', p.fotos.firstOrNull), ('Costas', costas)].indexed)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: RvSpace.xs),
+              child: _Miniatura(
+                rotulo: rotulo,
+                foto: f,
+                variante: _cor,
+                selecionada: _verCostas == (i == 1),
+                aoTocar: () => setState(() => _verCostas = i == 1),
+              ),
+            ),
         ]),
       ],
     ]);
@@ -125,9 +181,7 @@ class _PecaPageState extends State<PecaPage> {
       children: [
         Text(p.nome, style: tema.headlineMedium),
         const SizedBox(height: 8),
-        Text(p.precoFormatado,
-            style: const TextStyle(
-                fontSize: 22, fontWeight: FontWeight.w600, fontFeatures: numeros)),
+        Text(p.precoFormatado, style: RvText.price.copyWith(fontSize: 22)),
         const SizedBox(height: 16),
         Text(p.descricao,
             style: const TextStyle(color: corTextoSuave, height: 1.5)),
@@ -214,11 +268,7 @@ class _PecaPageState extends State<PecaPage> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1000),
                 child: Row(children: [
-                  Text(p.precoFormatado,
-                      style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          fontFeatures: numeros)),
+                  Text(p.precoFormatado, style: RvText.price),
                   const SizedBox(width: 20),
                   Expanded(
                     child: FilledButton(
@@ -239,4 +289,49 @@ class _PecaPageState extends State<PecaPage> {
       ),
     );
   }
+}
+
+/// Miniatura da galeria (frente/costas): borda vermelha na foto que está aberta.
+class _Miniatura extends StatelessWidget {
+  const _Miniatura({
+    required this.rotulo,
+    required this.foto,
+    required this.variante,
+    required this.selecionada,
+    required this.aoTocar,
+  });
+
+  final String rotulo;
+  final String? foto;
+  final VarianteCor variante;
+  final bool selecionada;
+  final VoidCallback aoTocar;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        selected: selecionada,
+        label: 'Foto: $rotulo',
+        excludeSemantics: true,
+        child: Tooltip(
+          message: rotulo,
+          child: InkWell(
+            onTap: aoTocar,
+            borderRadius: BorderRadius.circular(RvRadius.sm),
+            child: AnimatedContainer(
+              duration: RvMotion.de(context, RvMotion.fast),
+              width: 64,
+              height: 80,
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(RvRadius.sm),
+                border: Border.all(
+                    color: selecionada ? RvColors.brand : RvColors.border,
+                    width: selecionada ? 2 : 1),
+              ),
+              child: fotoOuPlaceholder(foto, variante: variante),
+            ),
+          ),
+        ),
+      );
 }

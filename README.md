@@ -7,7 +7,7 @@
 App da loja de roupas **RV Label**, coleção **Essence**, feito em Flutter/Dart para Android, iOS, web e Windows.
 Projeto Integrado de Modelagem e Desenvolvimento de Sistemas, UNIFEOB 2026.2.
 
-O repositório tem três partes, cada uma com a sua pasta: o **app** (Flutter, na raiz), o **site** da loja ([`site/`](site/), React) e a **API** de pedidos e do painel ([`api/`](api/), Node + MySQL). Versão atual do app: **1.2.2**. O que mudou em cada versão está no [`CHANGELOG.md`](CHANGELOG.md).
+O repositório tem três partes, cada uma com a sua pasta: o **app** (Flutter, na raiz), o **site** da loja ([`site/`](site/), React) e a **API** de pedidos e do painel ([`api/`](api/), Node + MySQL). Versão atual do app: **1.3.0**. O que mudou em cada versão está no [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Baixar o app (Windows)
 
@@ -22,7 +22,8 @@ Desde a 1.2.2, o pacote das Releases já conversa com o servidor da loja na inte
 
 ## O que o app faz
 
-- **Vitrine** com a coleção Essence em duas visões, que se alternam em **Vitrine | Grade**: a lista de nomes com a foto da peça ao passar o mouse, e a grade de cartões. Filtro por categoria e página de cada peça (cor, tamanho, foto de frente e de costas), que termina em "Você também pode gostar".
+- **Vitrine** com a coleção Essence em duas visões, que se alternam em **Vitrine | Grade**: a lista de nomes com a foto da peça ao passar o mouse, e a grade de cartões. Barra de filtros presa no topo (categoria, tamanho, cor, faixa de preço e ordem) e página de cada peça (cor, tamanho, miniaturas de frente e de costas, foto com zoom), que termina em "Você também pode gostar".
+- **Visual** definido em [`docs/DESIGN.md`](docs/DESIGN.md) (editorial escuro, vermelho só em ações e destaques, DM Serif Display nos títulos e Manrope no texto), com os tokens em `lib/ui/tema.dart`.
 - **Página inicial** com o índice por categoria ("Tudo o que a Essence tem hoje") e o guia "Antes de escolher" (tamanhos, cores, preços e atendimento), os mesmos do site.
 - **Coleções**, páginas **Sobre** e **Contato** e a faixa **Novidades RV**, com navegação Loja / Sobre / Contato e uma linha animada sob a opção do cabeçalho em que o mouse está.
 - **Sacola** e fechamento do pedido pelo **WhatsApp**. O formulário de Contato e as Novidades também seguem pelo WhatsApp.
