@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "COLE_SEU_APP_ID",
         "android_client_info": {
-          "package_name": "com.example.rvlabel_app"
+          "package_name": "br.com.rvlabel.app"
         }
       },
       "oauth_client": [],

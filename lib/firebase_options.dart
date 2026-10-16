@@ -66,7 +66,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: 'COLE_SEU_SENDER_ID',
     projectId: 'COLE_SEU_PROJECT_ID',
     storageBucket: 'COLE_SEU_PROJECT_ID.firebasestorage.app',
-    iosBundleId: 'com.example.rvlabelApp',
+    iosBundleId: 'br.com.rvlabel.app',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
