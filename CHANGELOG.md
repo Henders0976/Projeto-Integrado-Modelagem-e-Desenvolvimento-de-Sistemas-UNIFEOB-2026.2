@@ -34,6 +34,15 @@ Segue o formato do [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - `README` com a seção do site e do catálogo desativado; este `CHANGELOG`.
 - O `.gitignore` da raiz deixou de ser versionado (os de `android/`, `api/`, `ios/`, `site/` e `windows/` continuam).
 
+## 1.2.2 — 2026-10-16
+- O app de Windows conversa com o servidor da loja na internet (`https://rvlabel-api.onrender.com`, API no Render e banco no
+  Aiven), em vez de procurar a API em `localhost:3000`: peças, pedidos, "Meus pedidos" e a área administrativa funcionam sem
+  servidor local. No plano grátis, a primeira chamada depois de um tempo parado pode levar cerca de 50 segundos.
+- Identificador definitivo do app: `br.com.rvlabel.app` (Android, iOS e Windows); nas propriedades do `.exe`, a empresa
+  aparece como "RV Label".
+- API: conexão TLS com o banco hospedado (`DB_SSL_CA`), `render.yaml` com o serviço e passo a passo de hospedagem em
+  `api/COMO-RODAR.md`. CI: build do APK Android em todo PR.
+
 ## 1.2.1 — 2026-10-13
 - O que a administradora ativou fica salvo: o app guarda uma cópia do catálogo ativo no aparelho e, sem o servidor, mostra
   essa cópia (antes abria com a vitrine vazia). A cópia é atualizada a cada abertura com o servidor ligado e a cada mudança
