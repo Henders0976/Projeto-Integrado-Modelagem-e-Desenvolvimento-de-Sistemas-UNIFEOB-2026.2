@@ -2,6 +2,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 
+import '../core/filtro_vitrine.dart';
 import '../core/resumo.dart';
 import '../ia/assistente_page.dart';
 import '../models/models.dart';
@@ -52,24 +53,55 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   Categoria? _filtro; // null = "Todos"
+  String? _tamanho;
+  String? _cor;
+  FaixaPreco? _faixa;
+  var _ordem = OrdemVitrine.destaque;
   bool _grade = false; // false = Vitrine (nomes + foto), true = Grade de cartões (como no site)
   final _chaveColecao = GlobalKey();
+  final _chaveFiltros = GlobalKey(); // barra de filtros no fluxo da página
+  final _chaveFimColecao = GlobalKey(); // seção logo depois das peças: ali a barra fixa some
   final _chaveComo = GlobalKey();
   final _rolagem = ControladorSuave();
   final _y = ValueNotifier<double>(0); // posição da rolagem, para os efeitos
+  final _filtrosPresos = ValueNotifier(false); // barra de filtros fixa à vista
 
   @override
   void initState() {
     super.initState();
-    _rolagem.addListener(() => _y.value = _rolagem.offset);
+    _rolagem.addListener(() {
+      _y.value = _rolagem.offset;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _atualizarFiltrosPresos());
+    });
   }
 
   @override
   void dispose() {
     _rolagem.dispose();
     _y.dispose();
+    _filtrosPresos.dispose();
     super.dispose();
   }
+
+  /// Depois do layout (senão leria as posições do quadro anterior): a barra fixa aparece quando a
+  /// barra de filtros da página passa por baixo do topo, e some quando a coleção termina.
+  /// Guarda a posição na página (não na tela): longe da tela a lista desmonta esses widgets e
+  /// não dá mais para medir, mas a posição na página continua valendo.
+  void _atualizarFiltrosPresos() {
+    if (!mounted || !_rolagem.hasClients) return;
+    final y = _rolagem.offset;
+    final topo = MediaQuery.paddingOf(context).top + _alturaBarra;
+    final i = _topoDe(_chaveFiltros);
+    if (i != null) _filtrosNaPagina = i + y;
+    final f = _topoDe(_chaveFimColecao);
+    if (f != null) _fimNaPagina = f + y;
+    final inicio = _filtrosNaPagina, fim = _fimNaPagina;
+    _filtrosPresos.value =
+        inicio != null && inicio - y < topo && (fim == null || fim - y > topo + 96);
+  }
+
+  double? _filtrosNaPagina;
+  double? _fimNaPagina;
 
   void _abrirPeca(Produto peca) {
     final todas = widget.catalogo.todas();
@@ -171,9 +203,28 @@ class _HomePageState extends State<HomePage> {
         MaterialPageRoute(builder: (_) => AdminPage(catalogo: widget.catalogo)),
       );
 
+  int get _filtrosExtras =>
+      [_tamanho, _cor, _faixa].where((f) => f != null).length +
+      (_ordem == OrdemVitrine.destaque ? 0 : 1);
+
+  void _limparFiltros() => setState(() {
+        _filtro = null;
+        _tamanho = null;
+        _cor = null;
+        _faixa = null;
+        _ordem = OrdemVitrine.destaque;
+      });
+
+  List<Produto> get _pecasFiltradas => filtrarVitrine(widget.catalogo.porCategoria(_filtro),
+      tamanho: _tamanho, cor: _cor, faixa: _faixa, ordem: _ordem);
+
   @override
   Widget build(BuildContext context) {
-    final pecas = widget.catalogo.porCategoria(_filtro);
+    final pecas = _pecasFiltradas;
+    // Filtro trocado muda a altura da coleção: confere de novo a barra fixa depois do layout.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _atualizarFiltrosPresos());
+    // Ao trocar qualquer filtro os cartões entram de novo e a vitrine recomeça na primeira peça.
+    final chaveFiltro = '${_filtro?.name}-$_tamanho-$_cor-${_faixa?.name}-${_ordem.name}';
     final todas = widget.catalogo.todas();
     final resumo = resumirCatalogo(todas);
     final largura = MediaQuery.sizeOf(context).width;
@@ -193,16 +244,17 @@ class _HomePageState extends State<HomePage> {
           curve: Curves.easeOutBack,
           child: FloatingActionButton.small(
             tooltip: 'Voltar ao topo',
-            backgroundColor: corTexto,
-            foregroundColor: corPreto,
-            shape: const CircleBorder(),
+            backgroundColor: RvColors.surfaceRaised,
+            foregroundColor: RvColors.textPrimary,
+            shape: const CircleBorder(side: BorderSide(color: RvColors.border)),
             onPressed: _irParaTopo,
             child: const Icon(Icons.arrow_upward),
           ),
         ),
       ),
       body: FundoLiquido(
-        child: CustomScrollView(
+        child: Stack(children: [
+        CustomScrollView(
           controller: _rolagem,
           slivers: [
             SliverToBoxAdapter(child: _hero(context)),
@@ -214,14 +266,22 @@ class _HomePageState extends State<HomePage> {
                 'Feito com carinho',
               ]),
             ),
-            SliverToBoxAdapter(child: _tituloColecao(context, pecas.length)),
-            SliverToBoxAdapter(child: _filtros(lateral)),
+            SliverToBoxAdapter(child: _tituloColecao(context)),
+            SliverToBoxAdapter(
+              child: Padding(
+                key: _chaveFiltros,
+                padding: const EdgeInsets.only(top: RvSpace.xl, bottom: RvSpace.lg),
+                child: _barraFiltros(lateral, pecas.length),
+              ),
+            ),
             if (pecas.isEmpty)
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Text('Ainda não temos peças nessa categoria.',
-                      textAlign: TextAlign.center),
+              SliverToBoxAdapter(
+                child: RvEmptyState(
+                  icone: Icons.filter_alt_off_outlined,
+                  titulo: 'Nenhuma peça com esses filtros',
+                  texto: 'Tente outra combinação ou veja a coleção inteira.',
+                  rotuloAcao: 'Limpar filtros',
+                  aoAcionar: _limparFiltros,
                 ),
               )
             else if (_grade)
@@ -230,14 +290,13 @@ class _HomePageState extends State<HomePage> {
                 sliver: SliverGrid.builder(
                   gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: 270,
-                    childAspectRatio: 0.54,
-                    crossAxisSpacing: 18,
-                    mainAxisSpacing: 32,
+                    childAspectRatio: 0.56,
+                    crossAxisSpacing: RvSpace.lg,
+                    mainAxisSpacing: RvSpace.x2,
                   ),
                   itemCount: pecas.length,
                   itemBuilder: (_, i) => AoRolar(
-                    // A chave inclui o filtro: ao trocar de categoria os cartões entram de novo.
-                    key: ValueKey('${_filtro?.name}-${pecas[i].id}'),
+                    key: ValueKey('$chaveFiltro-${pecas[i].id}'),
                     escalonar: (i % 4) * 0.1,
                     child: _CartaoPeca(
                       peca: pecas[i],
@@ -250,16 +309,16 @@ class _HomePageState extends State<HomePage> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(lateral, 16, lateral, 8),
-                  // A chave inclui o filtro: ao trocar de categoria a vitrine recomeça na primeira peça.
                   child: Vitrine(
-                    key: ValueKey(_filtro?.name),
+                    key: ValueKey(chaveFiltro),
                     pecas: pecas,
                     aoAbrir: _abrirPeca,
                     rolagem: _y,
                   ),
                 ),
               ),
-            SliverToBoxAdapter(child: _colecoes(context)),
+            SliverToBoxAdapter(
+                child: KeyedSubtree(key: _chaveFimColecao, child: _colecoes(context))),
             // Índice e guia saem do catálogo e somem junto com as peças (nada a contar sem peça ativa).
             if (todas.isNotEmpty)
               SliverToBoxAdapter(
@@ -284,6 +343,55 @@ class _HomePageState extends State<HomePage> {
             SliverToBoxAdapter(child: _rodape(context)),
           ],
         ),
+        _filtrosFixos(lateral, pecas.length),
+        ]),
+      ),
+    );
+  }
+
+  /// Posição na tela do topo do widget da [chave] (do último quadro desenhado).
+  double? _topoDe(GlobalKey chave) {
+    final caixa = chave.currentContext?.findRenderObject();
+    // No primeiro quadro a caixa ainda não tem tamanho: ler a posição aí lança erro.
+    return caixa is RenderBox && caixa.attached && caixa.hasSize
+        ? caixa.localToGlobal(Offset.zero).dy
+        : null;
+  }
+
+  /// Cópia da barra de filtros presa logo abaixo do topo enquanto a coleção está na tela.
+  Widget _filtrosFixos(double lateral, int quantidade) {
+    final topo = MediaQuery.paddingOf(context).top + _alturaBarra;
+    return Positioned(
+      top: topo,
+      left: 0,
+      right: 0,
+      child: ValueListenableBuilder<bool>(
+        valueListenable: _filtrosPresos,
+        builder: (context, mostrar, __) {
+          // Desliza de baixo da barra do topo. Fundo quase opaco em vez de vidro fosco: um segundo
+          // BackdropFilter aqui deixava a tela inteira acinzentada no Flutter web em celular.
+          return IgnorePointer(
+            ignoring: !mostrar,
+            child: ClipRect(
+              child: AnimatedSlide(
+                offset: mostrar ? Offset.zero : const Offset(0, -1),
+                duration: RvMotion.de(context, RvMotion.base),
+                curve: RvMotion.curve,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: RvColors.bg.withValues(alpha: 0.94),
+                    border: const Border(bottom: BorderSide(color: RvColors.border)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: RvSpace.sm),
+                    child: ExcludeSemantics(
+                        excluding: !mostrar, child: _barraFiltros(lateral, quantidade)),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -316,20 +424,28 @@ class _HomePageState extends State<HomePage> {
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: TintaNav(child: Row(children: [
-                              GestureDetector(
-                                onLongPress: _abrirAdmin,
-                                behavior: HitTestBehavior.opaque,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 10),
-                                  child: Text('RV·LABEL',
-                                      style: TextStyle(
-                                          fontFamily: fonteTitulo,
-                                          fontSize: 28 - 6 * t,
-                                          letterSpacing: 4)),
+                              // O logo ocupa o que sobra e só encolhe em tela estreita (ex.: 320 px).
+                              Expanded(
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: GestureDetector(
+                                    onLongPress: _abrirAdmin,
+                                    behavior: HitTestBehavior.opaque,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 10),
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text('RV·LABEL',
+                                            style: TextStyle(
+                                                fontFamily: fonteTitulo,
+                                                fontSize: 28 - 6 * t,
+                                                letterSpacing: 4)),
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
-                              const Spacer(),
                               if (MediaQuery.sizeOf(context).width >= 760) ...[
                                 _linkMenu('Loja', () => _irPara(_chaveColecao)),
                                 _linkMenu('Sobre', _abrirSobre),
@@ -408,7 +524,7 @@ class _HomePageState extends State<HomePage> {
                         child: FractionallySizedBox(
                           widthFactor: progresso,
                           child: const SizedBox(
-                              height: 2, child: ColoredBox(color: corTexto)),
+                              height: 2, child: ColoredBox(color: RvColors.brand)),
                         ),
                       ),
                     ),
@@ -472,17 +588,13 @@ class _HomePageState extends State<HomePage> {
                   child: Text('Peças únicas, feitas pra você.',
                       style: TextStyle(color: corTextoSuave, fontSize: 15)),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: RvSpace.x2),
                 Revelar(
                   atraso: const Duration(milliseconds: 420),
-                  child: Wrap(spacing: 12, runSpacing: 12, children: [
-                    FilledButton(
-                        onPressed: () => _irPara(_chaveColecao),
-                        child: const Text('Ver peças disponíveis')),
-                    OutlinedButton(
-                        onPressed: () => _irPara(_chaveComo),
-                        child: const Text('Como comprar')),
-                  ]),
+                  child: RvButton(
+                      label: 'Ver coleção',
+                      icon: Icons.arrow_downward,
+                      onPressed: () => _irPara(_chaveColecao)),
                 ),
               ],
             );
@@ -514,8 +626,9 @@ class _HomePageState extends State<HomePage> {
                 foto,
               ]);
             }
+            // Hero de tela cheia: ocupa a altura visível abaixo da barra do topo.
             return ConstrainedBox(
-              constraints: BoxConstraints(minHeight: altura * 0.62),
+              constraints: BoxConstraints(minHeight: (altura - topo - 80).clamp(0.0, double.infinity)),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -533,7 +646,7 @@ class _HomePageState extends State<HomePage> {
 
   // ---------- coleção ----------
 
-  Widget _tituloColecao(BuildContext context, int quantidade) => Center(
+  Widget _tituloColecao(BuildContext context) => Center(
         key: _chaveColecao,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: _larguraMax),
@@ -549,32 +662,23 @@ class _HomePageState extends State<HomePage> {
                     const SizedBox(height: 10),
                     const Text(
                         'Toque numa peça pra abrir em detalhe, virar a foto e '
-                        'escolher a cor. Filtre por categoria logo abaixo.',
+                        'escolher a cor. Filtre e ordene logo abaixo.',
                         style: TextStyle(color: corTextoSuave, fontSize: 16)),
                   ],
                 );
-                final contagem = AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  child: Text('$quantidade ${quantidade == 1 ? 'peça' : 'peças'}',
-                      key: ValueKey(quantidade),
-                      style: const TextStyle(
-                          color: corTextoSuave, fontFeatures: _numerosAlinhados)),
-                );
-                // No celular a contagem e os botões ficam numa linha própria: lado a lado com o texto,
+                // No celular os botões ficam numa linha própria: lado a lado com o texto,
                 // o título se espremia em três linhas.
                 if (caixa.maxWidth < 600) {
                   return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     textos,
                     const SizedBox(height: 16),
-                    Row(children: [contagem, const Spacer(), _modo()]),
+                    Align(alignment: Alignment.centerRight, child: _modo()),
                   ]);
                 }
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Expanded(child: textos),
-                    const SizedBox(width: 16),
-                    contagem,
                     const SizedBox(width: 16),
                     _modo(),
                   ],
@@ -602,17 +706,17 @@ class _HomePageState extends State<HomePage> {
                 excludeSemantics: true,
                 child: InkWell(
                   onTap: () => setState(() => _grade = grade),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(RvRadius.sm),
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                    duration: RvMotion.de(context, RvMotion.fast),
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: _grade == grade ? corTexto : Colors.transparent,
-                      border: Border.all(color: _grade == grade ? corTexto : corLinha),
-                      borderRadius: BorderRadius.circular(2),
+                      color: _grade == grade ? RvColors.brandSoft : RvColors.surface,
+                      border: Border.all(color: _grade == grade ? RvColors.brand : RvColors.border),
+                      borderRadius: BorderRadius.circular(RvRadius.sm),
                     ),
-                    child: Icon(icone, size: 18, color: _grade == grade ? corPreto : corTexto),
+                    child: Icon(icone, size: 18, color: RvColors.textPrimary),
                   ),
                 ),
               ),
@@ -620,19 +724,136 @@ class _HomePageState extends State<HomePage> {
           ),
       ]);
 
-  Widget _filtros(double lateral) => Padding(
-        padding: const EdgeInsets.only(top: 24, bottom: 16),
-        child: SizedBox(
-          height: 48,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: lateral),
-            children: [
-              _chip('Todos', null),
-              for (final c in Categoria.values) _chip(c.rotulo, c),
-            ],
+  /// Categorias em pílulas, a contagem e o botão de filtrar e ordenar (tamanho, cor, preço).
+  Widget _barraFiltros(double lateral, int quantidade) => SizedBox(
+        height: 48,
+        child: Row(children: [
+          Expanded(
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.only(left: lateral),
+              children: [
+                _chip('Todos', null),
+                for (final c in Categoria.values) _chip(c.rotulo, c),
+              ],
+            ),
           ),
-        ),
+          Padding(
+            padding: EdgeInsets.only(left: RvSpace.md, right: lateral),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              AnimatedSwitcher(
+                duration: RvMotion.de(context, RvMotion.base),
+                child: Text('$quantidade ${quantidade == 1 ? 'peça' : 'peças'}',
+                    key: ValueKey(quantidade),
+                    style: RvText.caption.copyWith(fontFeatures: _numerosAlinhados)),
+              ),
+              const SizedBox(width: RvSpace.sm),
+              Badge(
+                isLabelVisible: _filtrosExtras > 0,
+                label: Text('$_filtrosExtras'),
+                child: IconButton.outlined(
+                  tooltip: 'Filtrar e ordenar',
+                  icon: const Icon(Icons.tune),
+                  onPressed: _abrirFiltros,
+                ),
+              ),
+            ]),
+          ),
+        ]),
+      );
+
+  /// Filtro trocado pela barra fixa: volta ao começo da coleção, senão a lista (agora menor)
+  /// pode ter ficado toda acima da tela.
+  void _voltarAoInicioDaColecao() {
+    final topo = MediaQuery.paddingOf(context).top + _alturaBarra;
+    if ((_topoDe(_chaveFiltros) ?? topo) < topo) _irPara(_chaveColecao);
+  }
+
+  /// Painel de baixo com ordem, tamanho, cor e faixa de preço. Cada toque já filtra a coleção.
+  Future<void> _abrirFiltros() async {
+    await _painelFiltros();
+    if (mounted) _voltarAoInicioDaColecao();
+  }
+
+  Future<void> _painelFiltros() => showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        builder: (contexto) => StatefulBuilder(builder: (contexto, atualizar) {
+          void mudar(VoidCallback f) {
+            setState(f);
+            atualizar(() {});
+          }
+
+          final base = widget.catalogo.porCategoria(_filtro);
+          final tamanhos = {for (final p in base) ...p.tamanhos}.toList();
+          final cores = {for (final p in base) for (final c in p.cores) c.nome}.toList()..sort();
+          final n = _pecasFiltradas.length;
+          Widget grupo(String titulo, List<Widget> opcoes) => Padding(
+                padding: const EdgeInsets.only(bottom: RvSpace.xl),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(titulo.toUpperCase(),
+                      style: RvText.label.copyWith(color: RvColors.textSecondary)),
+                  const SizedBox(height: RvSpace.md),
+                  Wrap(spacing: RvSpace.sm, runSpacing: RvSpace.sm, children: opcoes),
+                ]),
+              );
+          return SafeArea(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(contexto).height * 0.85),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(RvSpace.xl, 0, RvSpace.xl, RvSpace.xl),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Filtrar e ordenar', style: Theme.of(contexto).textTheme.headlineSmall),
+                  const SizedBox(height: RvSpace.xl),
+                  grupo('Ordenar', [
+                    for (final o in OrdemVitrine.values)
+                      PilulaEscolha(
+                          rotulo: o.rotulo,
+                          selecionada: _ordem == o,
+                          aoTocar: () => mudar(() => _ordem = o)),
+                  ]),
+                  grupo('Tamanho', [
+                    for (final t in tamanhos)
+                      PilulaEscolha(
+                          rotulo: t,
+                          selecionada: _tamanho == t,
+                          aoTocar: () => mudar(() => _tamanho = _tamanho == t ? null : t)),
+                  ]),
+                  grupo('Cor', [
+                    for (final c in cores)
+                      PilulaEscolha(
+                          rotulo: c,
+                          selecionada: _cor == c,
+                          aoTocar: () => mudar(() => _cor = _cor == c ? null : c)),
+                  ]),
+                  grupo('Preço', [
+                    for (final f in FaixaPreco.values)
+                      PilulaEscolha(
+                          rotulo: f.rotulo,
+                          selecionada: _faixa == f,
+                          aoTocar: () => mudar(() => _faixa = _faixa == f ? null : f)),
+                  ]),
+                  Row(children: [
+                    RvButton(
+                      label: 'Limpar',
+                      variant: RvButtonVariant.ghost,
+                      onPressed: () => mudar(() {
+                        _tamanho = null;
+                        _cor = null;
+                        _faixa = null;
+                        _ordem = OrdemVitrine.destaque;
+                      }),
+                    ),
+                    const Spacer(),
+                    RvButton(
+                        label: 'Ver $n ${n == 1 ? 'peça' : 'peças'}',
+                        onPressed: () => Navigator.pop(contexto)),
+                  ]),
+                ]),
+              ),
+            ),
+          );
+        }),
       );
 
   Widget _chip(String rotulo, Categoria? valor) => Padding(
@@ -640,7 +861,10 @@ class _HomePageState extends State<HomePage> {
         child: PilulaEscolha(
           rotulo: rotulo,
           selecionada: _filtro == valor,
-          aoTocar: () => setState(() => _filtro = valor),
+          aoTocar: () {
+            setState(() => _filtro = valor);
+            _voltarAoInicioDaColecao();
+          },
         ),
       );
 
@@ -940,9 +1164,10 @@ class _CartaoPassoState extends State<_CartaoPasso> {
         transform: Matrix4.translationValues(0, _sobre ? -6 : 0, 0),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Color(_sobre ? 0x26FFFFFF : 0x14FFFFFF),
-          borderRadius: BorderRadius.circular(raioPadrao),
-          border: Border.all(color: _sobre ? corTexto : corLinha),
+          color: _sobre ? RvColors.surfaceRaised : RvColors.surface,
+          borderRadius: BorderRadius.circular(RvRadius.md),
+          border: Border.all(
+              color: _sobre ? RvColors.brand.withValues(alpha: 0.4) : RvColors.border),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -997,7 +1222,7 @@ class _FotoDestaque extends StatelessWidget {
                         gradient: const LinearGradient(
                           begin: Alignment(0, 0.1),
                           end: Alignment.bottomCenter,
-                          colors: [Color(0x000B0B0B), Color(0xD90B0B0B)],
+                          colors: [Color(0x000B0B0C), Color(0xD90B0B0C)], // RvColors.bg
                         ),
                       ),
                     ),
@@ -1013,10 +1238,7 @@ class _FotoDestaque extends StatelessWidget {
                               style: const TextStyle(
                                   fontFamily: fonteTitulo, fontSize: 24, height: 1.1)),
                           const SizedBox(height: 4),
-                          Text(peca.precoFormatado,
-                              style: const TextStyle(
-                                  color: corTextoSuave,
-                                  fontFeatures: _numerosAlinhados)),
+                          Text(peca.precoFormatado, style: RvText.price),
                         ],
                       ),
                     ),
@@ -1074,27 +1296,32 @@ class _CartaoPecaState extends State<_CartaoPeca> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
+                  // Hover: borda vermelha a 40% e um brilho leve; nada de sombra (fundo escuro).
                   child: AnimatedContainer(
                     duration: dur,
-                    curve: Curves.easeOutCubic,
-                    transform: Matrix4.translationValues(0, _sobre ? -6 : 0, 0),
+                    curve: RvMotion.curve,
+                    foregroundDecoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(RvRadius.md),
+                      border: Border.all(
+                          color: _sobre
+                              ? RvColors.brand.withValues(alpha: 0.4)
+                              : Colors.transparent),
+                    ),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(raioPadrao),
+                      borderRadius: BorderRadius.circular(RvRadius.md),
                       boxShadow: [
-                        BoxShadow(
-                          color: Color(_sobre ? 0x73000000 : 0x29000000),
-                          blurRadius: _sobre ? 30 : 14,
-                          offset: Offset(0, _sobre ? 16 : 6),
-                        ),
+                        if (_sobre)
+                          BoxShadow(
+                              color: RvColors.brand.withValues(alpha: 0.2), blurRadius: 24),
                       ],
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(raioPadrao),
+                      borderRadius: BorderRadius.circular(RvRadius.md),
                       child: Stack(fit: StackFit.expand, children: [
                         AnimatedScale(
-                          scale: _sobre ? 1.07 : 1,
-                          duration: reduzir ? Duration.zero : const Duration(milliseconds: 500),
-                          curve: Curves.easeOutCubic,
+                          scale: _sobre ? 1.03 : 1,
+                          duration: RvMotion.de(context, RvMotion.slow),
+                          curve: RvMotion.curve,
                           child: ParallaxFoto(
                             intensidade: 14,
                             escala: 1.1,
@@ -1119,7 +1346,7 @@ class _CartaoPecaState extends State<_CartaoPeca> {
                                   gradient: LinearGradient(
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
-                                    colors: [Color(0x000B0B0B), Color(0xCC0B0B0B)],
+                                    colors: [Color(0x000B0B0C), Color(0xCC0B0B0C)], // RvColors.bg
                                   ),
                                 ),
                                 child: const Row(
@@ -1142,18 +1369,14 @@ class _CartaoPecaState extends State<_CartaoPeca> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: RvSpace.md),
                 Text(p.nome,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        fontFamily: fonteTitulo, fontSize: 19, height: 1.15)),
-                const SizedBox(height: 4),
-                Text(p.precoFormatado,
-                    style: const TextStyle(
-                        color: corTextoSuave,
-                        fontSize: 14,
-                        fontFeatures: _numerosAlinhados)),
+                        fontFamily: fonteTitulo, fontSize: 18, height: 1.15)),
+                const SizedBox(height: RvSpace.xs),
+                Text(p.precoFormatado, style: RvText.price.copyWith(fontSize: 16)),
                 if (p.cores.length > 1) ...[
                   const SizedBox(height: 8),
                   Wrap(spacing: 0, children: [

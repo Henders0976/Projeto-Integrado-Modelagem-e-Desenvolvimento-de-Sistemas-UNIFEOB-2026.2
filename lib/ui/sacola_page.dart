@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/mascaras.dart';
 import '../core/moeda.dart';
 import '../models/models.dart';
 import '../services/api.dart';
@@ -43,32 +44,34 @@ class _DadosCompradorDialogState extends State<_DadosCompradorDialog> {
         content: Form(
           key: _form,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextFormField(
+            RvTextField(
+              label: 'Nome',
               controller: _nome,
-              decoration: const InputDecoration(labelText: 'Nome'),
               validator: (v) =>
                   (v ?? '').trim().isEmpty ? 'Informe o nome' : null,
             ),
-            TextFormField(
+            RvTextField(
+              label: 'Telefone (com DDD)',
               controller: _telefone,
+              hint: '(11) 99999-9999',
               keyboardType: TextInputType.phone,
-              decoration:
-                  const InputDecoration(labelText: 'Telefone (com DDD)'),
+              inputFormatters: const [Mascara(formatarTelefone)],
               validator: (v) {
                 final n = _digitos(v ?? '').length;
                 return n < 10 || n > 13 ? 'Telefone inválido' : null;
               },
             ),
-            TextFormField(
+            RvTextField(
+              label: 'CPF (opcional)',
               controller: _cpf,
+              hint: '000.000.000-00',
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'CPF (opcional)'),
+              inputFormatters: const [Mascara(formatarCpf)],
               validator: (v) {
                 final n = _digitos(v ?? '').length;
                 return n != 0 && n != 11 ? 'CPF deve ter 11 dígitos' : null;
               },
             ),
-            const SizedBox(height: 8),
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
               controlAffinity: ListTileControlAffinity.leading,
@@ -131,8 +134,49 @@ class SacolaPage extends StatelessWidget {
           content: Text('Pedido não foi salvo (sem conexão). '
               'Enviando só pelo WhatsApp.')));
     }
+    // Com o pedido gravado, mostra o número antes de sair do app para o WhatsApp.
+    if (numero != null && context.mounted) {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => _PedidoRegistrado(numero: numero!, sacola: sacola),
+      );
+    }
     await whatsapp.enviar(sacola.mensagemPedido(numeroPedido: numero));
   }
+
+  Widget _resumo(BuildContext context, {required bool comTitulo}) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
+        if (comTitulo) ...[
+          Text('Resumo', style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: RvSpace.lg),
+        ],
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          const Text('Itens', style: TextStyle(color: RvColors.textSecondary)),
+          Text('${sacola.quantidadeTotal}',
+              style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()])),
+        ]),
+        const SizedBox(height: RvSpace.sm),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          const Text('Total'),
+          Flexible(
+            child: Text(
+              '${formatarReais(sacola.total)}'
+              '${sacola.temPrecoPendente ? ' + a combinar' : ''}',
+              textAlign: TextAlign.end,
+              style: RvText.price,
+            ),
+          ),
+        ]),
+        const SizedBox(height: RvSpace.xs),
+        const Text('Entrega e pagamento você combina no WhatsApp.', style: RvText.caption),
+        const SizedBox(height: RvSpace.lg),
+        RvButton(
+          label: 'Fechar pedido pelo WhatsApp',
+          icon: Icons.chat_outlined,
+          onPressed: () => _fechar(context),
+        ),
+      ]);
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -142,82 +186,102 @@ class SacolaPage extends StatelessWidget {
           builder: (context, _) {
             if (sacola.vazia) {
               return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.shopping_bag_outlined,
-                        size: 48, color: corTextoSuave),
-                    const SizedBox(height: 16),
-                    Text('Sua sacola tá vazia.',
-                        style: Theme.of(context).textTheme.headlineSmall),
-                    const SizedBox(height: 8),
-                    const Text('Bora escolher uma peça?',
-                        style: TextStyle(color: corTextoSuave)),
-                    const SizedBox(height: 24),
-                    OutlinedButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      child: const Text('Ver peças'),
+                child: SingleChildScrollView(
+                  child: RvEmptyState(
+                    icone: Icons.shopping_bag_outlined,
+                    titulo: 'Sua sacola tá vazia.',
+                    texto: 'Bora escolher uma peça?',
+                    rotuloAcao: 'Explorar coleção',
+                    aoAcionar: () => Navigator.of(context).maybePop(),
+                  ),
+                ),
+              );
+            }
+            final lista = ListView.separated(
+              padding: const EdgeInsets.all(RvSpace.xl),
+              itemCount: sacola.itens.length,
+              separatorBuilder: (_, __) => const Divider(height: RvSpace.x2),
+              itemBuilder: (_, k) => _LinhaItem(item: sacola.itens[k], sacola: sacola),
+            );
+            // Desktop: resumo fixo à direita. Celular/tablet: preso no rodapé.
+            return LayoutBuilder(builder: (context, caixa) {
+              if (caixa.maxWidth >= 1024) {
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1280),
+                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Expanded(child: lista),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(0, RvSpace.xl, RvSpace.xl, RvSpace.xl),
+                        child: SizedBox(
+                          width: 360,
+                          child: Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(RvSpace.xl),
+                              child: _resumo(context, comTitulo: true),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ]),
+                  ),
+                );
+              }
+              return Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: Column(children: [
+                    Expanded(child: lista),
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(
+                          RvSpace.xl, RvSpace.lg, RvSpace.xl, RvSpace.lg),
+                      decoration: const BoxDecoration(
+                        color: RvColors.surface,
+                        border: Border(top: BorderSide(color: RvColors.border)),
+                      ),
+                      child: SafeArea(top: false, child: _resumo(context, comTitulo: false)),
                     ),
                   ]),
                 ),
               );
-            }
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
-                child: Column(children: [
-                  Expanded(
-                    child: ListView.separated(
-                      padding: const EdgeInsets.all(20),
-                      itemCount: sacola.itens.length,
-                      separatorBuilder: (_, __) => const Divider(height: 32),
-                      itemBuilder: (_, k) => _LinhaItem(
-                          item: sacola.itens[k], sacola: sacola),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                    decoration: const BoxDecoration(
-                      color: corPainel,
-                      border:
-                          Border(top: BorderSide(color: corLinha, width: 0.5)),
-                    ),
-                    child: SafeArea(
-                      top: false,
-                      child: Column(children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Total'),
-                            Text(
-                              '${formatarReais(sacola.total)}'
-                              '${sacola.temPrecoPendente ? ' + a combinar' : ''}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(fontFeatures: const [
-                                FontFeature.tabularFigures()
-                              ]),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton.icon(
-                            icon: const Icon(Icons.chat_outlined),
-                            label: const Text('Fechar pedido pelo WhatsApp'),
-                            onPressed: () => _fechar(context),
-                          ),
-                        ),
-                      ]),
-                    ),
-                  ),
-                ]),
-              ),
-            );
+            });
           },
         )),
+      );
+}
+
+/// Confirmação depois de gravar o pedido: mostra o número (para "Meus pedidos") e só então abre o WhatsApp.
+class _PedidoRegistrado extends StatelessWidget {
+  const _PedidoRegistrado({required this.numero, required this.sacola});
+  final int numero;
+  final Sacola sacola;
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        icon: const Icon(Icons.check_circle_outline, color: RvColors.success, size: 40),
+        title: Text('Pedido nº $numero registrado', textAlign: TextAlign.center),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(
+            '${sacola.quantidadeTotal} ${sacola.quantidadeTotal == 1 ? 'item' : 'itens'} · '
+            '${formatarReais(sacola.total)}${sacola.temPrecoPendente ? ' + a combinar' : ''}',
+            style: RvText.price.copyWith(fontSize: 16),
+          ),
+          const SizedBox(height: RvSpace.md),
+          const Text(
+            'Guarde esse número para acompanhar em "Meus pedidos". Agora envie a mensagem '
+            'no WhatsApp para combinar entrega e pagamento.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: RvColors.textSecondary),
+          ),
+        ]),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          RvButton(
+            label: 'Abrir WhatsApp',
+            icon: Icons.chat_outlined,
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
       );
 }
 
@@ -244,9 +308,7 @@ class _LinhaItem extends StatelessWidget {
           Text('${item.cor} · ${item.tamanho}',
               style: const TextStyle(color: corTextoSuave)),
           const SizedBox(height: 2),
-          Text(p.precoFormatado,
-              style: const TextStyle(
-                  fontFeatures: [FontFeature.tabularFigures()])),
+          Text(p.precoFormatado, style: RvText.price.copyWith(fontSize: 15)),
           const SizedBox(height: 10),
           SeletorQuantidade(
             quantidade: item.quantidade,

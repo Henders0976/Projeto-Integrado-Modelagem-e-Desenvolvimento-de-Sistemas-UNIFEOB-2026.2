@@ -10,10 +10,36 @@ import '../services/api.dart';
 import '../services/api_admin.dart';
 import '../services/catalogo_repository.dart';
 import 'admin_produto_page.dart';
+import 'componentes.dart';
 import 'fundo_liquido.dart';
 import 'rolagem_suave.dart';
+import 'tema.dart';
 
 const _statusPedido = ['Recebido', 'Em separação', 'Enviado', 'Cancelado'];
+
+/// Lista "carregando": blocos com brilho no lugar das linhas.
+Widget _carregandoLista() => ListView(
+      padding: const EdgeInsets.all(RvSpace.md),
+      children: [
+        for (var i = 0; i < 6; i++)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: RvSpace.xs),
+            child: RvSkeleton(altura: 64, raio: RvRadius.md),
+          ),
+      ],
+    );
+
+Widget _erroLista(VoidCallback recarregar) => Center(
+      child: SingleChildScrollView(
+        child: RvEmptyState(
+          icone: Icons.cloud_off_outlined,
+          titulo: 'Não deu para carregar',
+          texto: 'Confira a conexão com o servidor.',
+          rotuloAcao: 'Tentar de novo',
+          aoAcionar: recarregar,
+        ),
+      ),
+    );
 
 /// Área da dona da loja: entra com e-mail e senha e gerencia pedidos e produtos.
 class AdminPage extends StatefulWidget {
@@ -192,14 +218,18 @@ class _PedidosAdminState extends State<_PedidosAdmin>
         future: futuro,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return _carregandoLista();
           }
-          if (snap.hasError) {
-            return Center(child: TextButton(
-                onPressed: recarregar, child: const Text('Erro ao carregar. Tentar de novo')));
-          }
+          if (snap.hasError) return _erroLista(recarregar);
           final lista = snap.data!;
-          if (lista.isEmpty) return const Center(child: Text('Nenhum pedido ainda.'));
+          if (lista.isEmpty) {
+            return const Center(
+              child: RvEmptyState(
+                  icone: Icons.receipt_long_outlined,
+                  titulo: 'Nenhum pedido ainda',
+                  texto: 'Os pedidos feitos no app aparecem aqui.'),
+            );
+          }
           final ind = IndicadoresVendas.calcular([
             for (final p in lista)
               if (p['status'] != 'Cancelado') (p['total'] as num).toDouble()
@@ -212,8 +242,19 @@ class _PedidosAdminState extends State<_PedidosAdmin>
                 Card(
                   child: ExpansionTile(
                     title: Text('#${p['id']} · ${p['cliente']}'),
-                    subtitle: Text('${p['status']} · ${formatarReais((p['total'] as num).toDouble())}'
-                        '${p['precoPendente'] == true ? ' + a combinar' : ''}'),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: RvSpace.xs),
+                      child: Wrap(
+                        spacing: RvSpace.sm,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          RvStatusBadge(p['status'] as String),
+                          Text('${formatarReais((p['total'] as num).toDouble())}'
+                              '${p['precoPendente'] == true ? ' + a combinar' : ''}',
+                              style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()])),
+                        ],
+                      ),
+                    ),
                     childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                     expandedCrossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -308,6 +349,74 @@ class _ProdutosAdminState extends State<ProdutosAdmin>
   bool _selecionando = false;
   bool _ocupado = false; // ativando/desativando em lote
   final _marcados = <String>{};
+  final _busca = TextEditingController();
+  bool? _naLoja; // null = todos
+  String? _categoria;
+
+  @override
+  void dispose() {
+    _busca.dispose();
+    super.dispose();
+  }
+
+  /// Trocar busca ou filtro desmarca tudo: "Selecionar todos" e o lote valem só para o que está na tela.
+  void _mudarFiltro(VoidCallback f) => setState(() {
+        f();
+        _marcados.clear();
+      });
+
+  List<Map<String, dynamic>> _visiveis(List<Map<String, dynamic>> todos) {
+    final busca = _busca.text.trim().toLowerCase();
+    return [
+      for (final p in todos)
+        if ((busca.isEmpty || '${p['nome']} ${p['codigo']}'.toLowerCase().contains(busca)) &&
+            (_naLoja == null || (p['ativo'] == true) == _naLoja) &&
+            (_categoria == null || p['categoria'] == _categoria))
+          p,
+    ];
+  }
+
+  Widget _buscaEFiltros(List<Map<String, dynamic>> todos) {
+    final categorias = {for (final p in todos) p['categoria']}.whereType<String>().toList()..sort();
+    Widget pilula(String rotulo, bool sel, VoidCallback f) => Padding(
+          padding: const EdgeInsets.only(right: RvSpace.sm),
+          child: PilulaEscolha(rotulo: rotulo, selecionada: sel, aoTocar: () => _mudarFiltro(f)),
+        );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: RvSpace.sm),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        TextField(
+          controller: _busca,
+          onChanged: (_) => _mudarFiltro(() {}),
+          decoration: InputDecoration(
+            hintText: 'Buscar por nome ou código',
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: _busca.text.isEmpty
+                ? null
+                : IconButton(
+                    tooltip: 'Limpar busca',
+                    icon: const Icon(Icons.close),
+                    onPressed: () => _mudarFiltro(_busca.clear),
+                  ),
+          ),
+        ),
+        const SizedBox(height: RvSpace.md),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(children: [
+            pilula('Todos', _naLoja == null, () => _naLoja = null),
+            pilula('Na loja', _naLoja == true, () => _naLoja = true),
+            pilula('Desativados', _naLoja == false, () => _naLoja = false),
+            if (categorias.isNotEmpty) ...[
+              const SizedBox(height: 24, child: VerticalDivider(width: RvSpace.lg)),
+              for (final c in categorias)
+                pilula(c, _categoria == c, () => _categoria = _categoria == c ? null : c),
+            ],
+          ]),
+        ),
+      ]),
+    );
+  }
 
   Future<void> _executar(Future<void> Function() acao) async {
     try {
@@ -449,18 +558,26 @@ class _ProdutosAdminState extends State<ProdutosAdmin>
   Widget build(BuildContext context) => FutureBuilder(
         future: futuro,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snap.hasError) {
-            return Center(child: TextButton(
-                onPressed: recarregar, child: const Text('Erro ao carregar. Tentar de novo')));
-          }
+          if (snap.connectionState != ConnectionState.done) return _carregandoLista();
+          if (snap.hasError) return _erroLista(recarregar);
+          final lista = _visiveis(snap.data!);
           return RefreshIndicator(
             onRefresh: () async => recarregar(),
-            child: ListaSuave(padding: const EdgeInsets.all(12), children: [
-              _barraSelecao(snap.data!),
-              for (final p in snap.data!)
+            child: ListaSuave(padding: const EdgeInsets.all(RvSpace.md), children: [
+              _buscaEFiltros(snap.data!),
+              _barraSelecao(lista),
+              if (lista.isEmpty)
+                RvEmptyState(
+                  icone: Icons.search_off,
+                  titulo: 'Nenhum produto encontrado',
+                  rotuloAcao: 'Limpar busca e filtros',
+                  aoAcionar: () => _mudarFiltro(() {
+                    _busca.clear();
+                    _naLoja = null;
+                    _categoria = null;
+                  }),
+                ),
+              for (final p in lista)
                 if (_selecionando)
                   _linhaSelecionavel(p)
                 else
@@ -500,7 +617,17 @@ class _ProdutosAdminState extends State<ProdutosAdmin>
                           dense: true,
                           contentPadding: EdgeInsets.zero,
                           title: Text('${v['cor']} · ${v['tamanho']}'),
-                          trailing: Text(v['estoque'] == null ? 'sem controle' : '${v['estoque']}'),
+                          // Estoque baixo (≤ 2) em amarelo, para repor antes de acabar.
+                          trailing: Text(
+                            v['estoque'] == null ? 'sem controle' : '${v['estoque']}',
+                            style: TextStyle(
+                              color: v['estoque'] is num && (v['estoque'] as num) <= 2
+                                  ? RvColors.warning
+                                  : null,
+                              fontWeight: FontWeight.w600,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
+                          ),
                           onTap: () async {
                             final (ok, q) = await _perguntar(
                                 '${v['cor']} · ${v['tamanho']}', 'Quantidade (vazio = sem controle)',

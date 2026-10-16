@@ -34,6 +34,25 @@ Segue o formato do [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - `README` com a seção do site e do catálogo desativado; este `CHANGELOG`.
 - O `.gitignore` da raiz deixou de ser versionado (os de `android/`, `api/`, `ios/`, `site/` e `windows/` continuam).
 
+## 1.3.0 — 2026-10-16
+- Visual novo seguindo o `docs/DESIGN.md` (editorial escuro): fundo quase preto, vermelho da marca só em botões, seleção e
+  destaques, títulos em DM Serif Display e corpo em Manrope (embutida, licença OFL). Cores, espaços, cantos e tempos de
+  animação viraram tokens (`RvColors`, `RvSpace`, `RvRadius`, `RvMotion`, `RvText`) em `lib/ui/tema.dart`.
+- Componentes comuns: botão com estado "carregando", selo de status do pedido, estado vazio, bloco de carregamento com
+  brilho e campo com rótulo acima e erro abaixo.
+- Início: hero de tela cheia com um só botão, "Ver coleção".
+- Coleção: barra de filtros que fica presa no topo ao rolar, com categoria, tamanho, cor, faixa de preço, ordem e a
+  contagem de peças; sem resultado, aparece "Nenhuma peça com esses filtros" com "Limpar filtros".
+- Peça: miniaturas de frente e costas e foto em tela cheia com zoom (pinça ou roda do mouse).
+- Sacola: máscara de telefone `(11) 99999-9999` e CPF `000.000.000-00`, resumo fixo (à direita no desktop) e confirmação
+  com o número do pedido antes de abrir o WhatsApp.
+- Meus pedidos: linha do tempo do status com cores (Recebido, Em separação, Enviado; Cancelado em vermelho).
+- Assistente: balões novos, indicador "digitando…" e sugestões rápidas.
+- Área administrativa: busca e filtros (na loja/desativados, categoria) nos produtos, status colorido nos pedidos,
+  estoque de até 2 unidades em amarelo e carregamento com blocos no lugar do círculo.
+- Com "reduzir movimento" ligado no sistema, o fundo líquido deixa de reagir ao mouse e ao toque.
+- Regras de negócio, chamadas à API, cálculo do total e mensagem do WhatsApp não mudaram.
+
 ## 1.2.2 — 2026-10-16
 - O app de Windows conversa com o servidor da loja na internet (`https://rvlabel-api.onrender.com`, API no Render e banco no
   Aiven), em vez de procurar a API em `localhost:3000`: peças, pedidos, "Meus pedidos" e a área administrativa funcionam sem

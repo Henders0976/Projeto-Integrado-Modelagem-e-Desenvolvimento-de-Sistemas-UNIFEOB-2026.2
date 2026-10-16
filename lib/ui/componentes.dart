@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/models.dart';
 import 'tema.dart';
 
-/// Opção de escolha (categoria, cor, tamanho): cheia quando selecionada,
-/// só contorno nas outras, com transição suave. Alvo de toque de pelo menos 44 px.
+/// Opção de escolha (categoria, tamanho, filtro) — o RvChip do DESIGN.md.
+/// Selecionada: fundo vermelho suave e borda vermelha. Alvo de toque de pelo menos 44 px.
 class PilulaEscolha extends StatelessWidget {
   const PilulaEscolha({
     super.key,
@@ -19,41 +20,33 @@ class PilulaEscolha extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final duracao = MediaQuery.disableAnimationsOf(context)
-        ? Duration.zero
-        : const Duration(milliseconds: 220);
+    final duracao = RvMotion.de(context, RvMotion.fast);
+    const forma = BorderRadius.all(Radius.circular(RvRadius.pill));
     return Semantics(
       button: true,
       selected: selecionada,
       child: AnimatedContainer(
         duration: duracao,
-        curve: Curves.easeOutCubic,
+        curve: RvMotion.curve,
         decoration: BoxDecoration(
-          color: selecionada ? corTexto : Colors.transparent,
-          borderRadius: BorderRadius.circular(2),
-          border: Border.all(color: selecionada ? corTexto : corLinha),
+          color: selecionada ? RvColors.brandSoft : RvColors.surface,
+          borderRadius: forma,
+          border: Border.all(color: selecionada ? RvColors.brand : RvColors.border),
         ),
         child: Material(
           type: MaterialType.transparency,
           child: InkWell(
             onTap: aoTocar,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: forma,
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: RvSpace.lg),
                 child: Center(
                   widthFactor: 1,
-                  child: AnimatedDefaultTextStyle(
-                    duration: duracao,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
-                      color: selecionada ? corPreto : corTexto,
-                    ),
-                    child: Text(rotulo),
-                  ),
+                  child: Text(rotulo,
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w600, color: RvColors.textPrimary)),
                 ),
               ),
             ),
@@ -64,8 +57,8 @@ class PilulaEscolha extends StatelessWidget {
   }
 }
 
-/// Bolinha de cor: recorte da própria foto da peça com a cor aplicada,
-/// então mostra exatamente o que a cliente vai ver. Anel quando selecionada.
+/// Bolinha de cor (RvColorSwatch): recorte da própria foto da peça com a cor aplicada,
+/// então mostra exatamente o que a cliente vai ver. Anel vermelho de 2 px quando selecionada.
 class AmostraCor extends StatelessWidget {
   const AmostraCor({
     super.key,
@@ -73,7 +66,7 @@ class AmostraCor extends StatelessWidget {
     required this.variante,
     required this.selecionada,
     required this.aoTocar,
-    this.tamanho = 44,
+    this.tamanho = 28,
   });
 
   final String? foto;
@@ -84,16 +77,17 @@ class AmostraCor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final duracao = MediaQuery.disableAnimationsOf(context)
-        ? Duration.zero
-        : const Duration(milliseconds: 220);
+    const semFoto = ColoredBox(color: RvColors.surfaceRaised);
     Widget miolo = foto == null
-        ? const ColoredBox(color: Color(0x33FFFFFF))
+        ? semFoto
         : Image.asset(foto!,
             fit: BoxFit.cover,
             alignment: const Alignment(0, -0.1),
-            errorBuilder: (_, __, ___) => const ColoredBox(color: Color(0x33FFFFFF)));
+            cacheWidth: (tamanho * 3).round(),
+            errorBuilder: (_, __, ___) => semFoto);
     if (foto != null) miolo = variante.aplicar(miolo);
+    // Bolinhas grandes (seletor) ganham área de toque de 44 px; as pequenas do cartão não são alvo próprio.
+    final alvo = tamanho >= 28 ? 44.0 : tamanho + 6;
     return Semantics(
       button: true,
       selected: selecionada,
@@ -104,18 +98,23 @@ class AmostraCor extends StatelessWidget {
           onTap: aoTocar,
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
-            child: AnimatedContainer(
-              duration: duracao,
-              curve: Curves.easeOutCubic,
-              width: tamanho + 10,
-              height: tamanho + 10,
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: selecionada ? corTexto : Colors.transparent, width: 2),
+            child: SizedBox.square(
+              dimension: alvo,
+              child: Center(
+                child: AnimatedContainer(
+                  duration: RvMotion.de(context, RvMotion.fast),
+                  curve: RvMotion.curve,
+                  width: tamanho + 6,
+                  height: tamanho + 6,
+                  padding: const EdgeInsets.all(1),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: selecionada ? RvColors.brand : Colors.transparent, width: 2),
+                  ),
+                  child: ClipOval(child: miolo),
+                ),
               ),
-              child: ClipOval(child: miolo),
             ),
           ),
         ),
@@ -124,7 +123,7 @@ class AmostraCor extends StatelessWidget {
   }
 }
 
-/// Seletor de quantidade: menos, número, mais, dentro de um contorno só.
+/// Seletor de quantidade (stepper): menos, número, mais, dentro de um contorno só.
 class SeletorQuantidade extends StatelessWidget {
   const SeletorQuantidade({
     super.key,
@@ -140,8 +139,9 @@ class SeletorQuantidade extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DecoratedBox(
         decoration: BoxDecoration(
-          border: Border.all(color: corLinha),
-          borderRadius: BorderRadius.circular(2),
+          color: RvColors.surface,
+          border: Border.all(color: RvColors.border),
+          borderRadius: BorderRadius.circular(RvRadius.sm),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           IconButton(
@@ -153,7 +153,7 @@ class SeletorQuantidade extends StatelessWidget {
           SizedBox(
             width: 28,
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
+              duration: RvMotion.de(context, RvMotion.fast),
               transitionBuilder: (filho, a) => FadeTransition(
                 opacity: a,
                 child: ScaleTransition(scale: Tween(begin: 0.7, end: 1.0).animate(a), child: filho),
@@ -183,9 +183,9 @@ Widget fotoOuPlaceholder(String? caminho,
   const vazio = Column(
     mainAxisAlignment: MainAxisAlignment.center,
     children: [
-      Icon(Icons.checkroom, size: 44, color: corTextoSuave),
+      Icon(Icons.checkroom, size: 44, color: RvColors.textMuted),
       SizedBox(height: 6),
-      Text('Foto em breve', style: TextStyle(color: corTextoSuave, fontSize: 12)),
+      Text('Foto em breve', style: RvText.caption),
     ],
   );
   Widget conteudo = caminho == null
@@ -198,11 +198,242 @@ Widget fotoOuPlaceholder(String? caminho,
   final quadro = Container(
     width: double.infinity,
     decoration: BoxDecoration(
-      color: const Color(0x1AFFFFFF),
-      borderRadius: BorderRadius.circular(raioPadrao),
+      color: RvColors.surface,
+      borderRadius: BorderRadius.circular(RvRadius.md),
     ),
     clipBehavior: Clip.antiAlias,
     child: conteudo,
   );
   return heroTag == null ? quadro : Hero(tag: heroTag, child: quadro);
+}
+
+enum RvButtonVariant { primary, secondary, ghost }
+
+/// Botão padrão: primary (vermelho), secondary (contorno) ou ghost (só texto).
+/// Carregando, mostra um spinner no lugar do texto e ignora toques sem mudar de cor.
+class RvButton extends StatelessWidget {
+  const RvButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.variant = RvButtonVariant.primary,
+    this.icon,
+    this.loading = false,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final RvButtonVariant variant;
+  final IconData? icon;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final acao = onPressed == null ? null : (loading ? () {} : onPressed);
+    final corSpinner =
+        variant == RvButtonVariant.primary ? RvColors.onBrand : RvColors.textPrimary;
+    final rotulo = loading
+        ? Semantics(
+            label: 'Carregando',
+            child: SizedBox.square(
+              dimension: 18,
+              child: CircularProgressIndicator(strokeWidth: 2, color: corSpinner),
+            ),
+          )
+        : Text(label);
+    final comIcone = icon != null && !loading;
+    return switch (variant) {
+      RvButtonVariant.primary => comIcone
+          ? FilledButton.icon(onPressed: acao, icon: Icon(icon), label: rotulo)
+          : FilledButton(onPressed: acao, child: rotulo),
+      RvButtonVariant.secondary => comIcone
+          ? OutlinedButton.icon(onPressed: acao, icon: Icon(icon), label: rotulo)
+          : OutlinedButton(onPressed: acao, child: rotulo),
+      RvButtonVariant.ghost => comIcone
+          ? TextButton.icon(onPressed: acao, icon: Icon(icon), label: rotulo)
+          : TextButton(onPressed: acao, child: rotulo),
+    };
+  }
+}
+
+/// Status do pedido em pílula com ponto colorido (Recebido, Em separação, Enviado, Cancelado).
+class RvStatusBadge extends StatelessWidget {
+  const RvStatusBadge(this.status, {super.key});
+  final String status;
+
+  static Color corDe(String status) => switch (status) {
+        'Recebido' => RvColors.info,
+        'Em separação' => RvColors.warning,
+        'Enviado' => RvColors.success,
+        'Cancelado' => RvColors.danger,
+        _ => RvColors.textSecondary,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final cor = corDe(status);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: cor.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(RvRadius.pill),
+        border: Border.all(color: cor.withValues(alpha: 0.4)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+            width: 8, height: 8, decoration: BoxDecoration(color: cor, shape: BoxShape.circle)),
+        const SizedBox(width: 6),
+        Text(status, style: TextStyle(color: cor, fontSize: 12, fontWeight: FontWeight.w600)),
+      ]),
+    );
+  }
+}
+
+/// Estado vazio: ícone, título, texto curto e um botão.
+class RvEmptyState extends StatelessWidget {
+  const RvEmptyState({
+    super.key,
+    required this.icone,
+    required this.titulo,
+    this.texto,
+    this.rotuloAcao,
+    this.aoAcionar,
+  });
+
+  final IconData icone;
+  final String titulo;
+  final String? texto;
+  final String? rotuloAcao;
+  final VoidCallback? aoAcionar;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: RvSpace.xl, vertical: RvSpace.x3),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: RvColors.surface,
+              shape: BoxShape.circle,
+              border: Border.all(color: RvColors.border),
+            ),
+            child: Icon(icone, size: 30, color: RvColors.textSecondary),
+          ),
+          const SizedBox(height: RvSpace.lg),
+          Text(titulo,
+              textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall),
+          if (texto != null) ...[
+            const SizedBox(height: RvSpace.sm),
+            Text(texto!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: RvColors.textSecondary)),
+          ],
+          if (rotuloAcao != null) ...[
+            const SizedBox(height: RvSpace.xl),
+            RvButton(label: rotuloAcao!, onPressed: aoAcionar, variant: RvButtonVariant.secondary),
+          ],
+        ]),
+      );
+}
+
+/// Bloco de carregamento com brilho suave passando (parado com "reduzir movimento").
+class RvSkeleton extends StatefulWidget {
+  const RvSkeleton({super.key, this.largura, this.altura = 16, this.raio = RvRadius.sm});
+  final double? largura;
+  final double altura;
+  final double raio;
+
+  @override
+  State<RvSkeleton> createState() => _RvSkeletonState();
+}
+
+class _RvSkeletonState extends State<RvSkeleton> with SingleTickerProviderStateMixin {
+  late final _anim =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 1400));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    MediaQuery.disableAnimationsOf(context) ? _anim.stop() : _anim.repeat();
+  }
+
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+        child: AnimatedBuilder(
+          animation: _anim,
+          builder: (_, __) {
+            final x = _anim.value * 3 - 1; // de -1 a 2: o brilho atravessa o bloco
+            return Container(
+              width: widget.largura,
+              height: widget.altura,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(widget.raio),
+                gradient: LinearGradient(
+                  begin: Alignment(x - 1, 0),
+                  end: Alignment(x + 1, 0),
+                  colors: const [
+                    RvColors.surfaceRaised,
+                    Color(0xFF26262A),
+                    RvColors.surfaceRaised,
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      );
+}
+
+/// Campo de texto com o rótulo acima, ajuda/erro abaixo e máscara opcional.
+class RvTextField extends StatelessWidget {
+  const RvTextField({
+    super.key,
+    required this.label,
+    required this.controller,
+    this.hint,
+    this.helper,
+    this.keyboardType,
+    this.validator,
+    this.inputFormatters,
+    this.onSubmitted,
+    this.obscureText = false,
+    this.errorText,
+  });
+
+  final String label;
+  final TextEditingController controller;
+  final String? hint;
+  final String? helper;
+  final TextInputType? keyboardType;
+  final FormFieldValidator<String>? validator;
+  final List<TextInputFormatter>? inputFormatters;
+  final ValueChanged<String>? onSubmitted;
+  final bool obscureText;
+  final String? errorText;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: RvSpace.lg),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: RvText.label.copyWith(color: RvColors.textSecondary)),
+          const SizedBox(height: 6),
+          TextFormField(
+            controller: controller,
+            keyboardType: keyboardType,
+            obscureText: obscureText,
+            inputFormatters: inputFormatters,
+            validator: validator,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            onFieldSubmitted: onSubmitted,
+            decoration: InputDecoration(hintText: hint, helperText: helper, errorText: errorText),
+          ),
+        ]),
+      );
 }
