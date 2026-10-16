@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -9,7 +11,7 @@ plugins {
 
 // Chave de assinatura da release em android/key.properties (fora do git): storeFile, storePassword, keyAlias, keyPassword.
 // Sem o arquivo, a release sai assinada com a chave de debug (serve para testar, não para a Play Store).
-val chave = java.util.Properties().apply {
+val chave = Properties().apply {
     val arquivo = rootProject.file("key.properties")
     if (arquivo.exists()) arquivo.inputStream().use { load(it) }
 }
