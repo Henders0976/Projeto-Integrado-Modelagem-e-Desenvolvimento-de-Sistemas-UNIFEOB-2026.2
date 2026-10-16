@@ -7,8 +7,15 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Chave de assinatura da release em android/key.properties (fora do git): storeFile, storePassword, keyAlias, keyPassword.
+// Sem o arquivo, a release sai assinada com a chave de debug (serve para testar, não para a Play Store).
+val chave = java.util.Properties().apply {
+    val arquivo = rootProject.file("key.properties")
+    if (arquivo.exists()) arquivo.inputStream().use { load(it) }
+}
+
 android {
-    namespace = "com.example.rvlabel_app"
+    namespace = "br.com.rvlabel.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -18,8 +25,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.rvlabel_app"
+        applicationId = "br.com.rvlabel.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -32,11 +38,20 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (chave.isNotEmpty()) {
+            create("release") {
+                storeFile = rootProject.file(chave.getProperty("storeFile"))
+                storePassword = chave.getProperty("storePassword")
+                keyAlias = chave.getProperty("keyAlias")
+                keyPassword = chave.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(if (chave.isNotEmpty()) "release" else "debug")
         }
     }
 }

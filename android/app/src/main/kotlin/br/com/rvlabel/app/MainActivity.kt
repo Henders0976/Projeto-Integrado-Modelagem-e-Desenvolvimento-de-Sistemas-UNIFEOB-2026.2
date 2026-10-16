@@ -1,4 +1,4 @@
-package com.example.rvlabel_app
+package br.com.rvlabel.app
 
 import io.flutter.embedding.android.FlutterActivity
 

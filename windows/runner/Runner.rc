@@ -89,11 +89,11 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
+            VALUE "CompanyName", "RV Label" "\0"
             VALUE "FileDescription", "rvlabel_app" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "rvlabel_app" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 RV Label. Todos os direitos reservados." "\0"
             VALUE "OriginalFilename", "rvlabel_app.exe" "\0"
             VALUE "ProductName", "rvlabel_app" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"

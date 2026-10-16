@@ -57,6 +57,7 @@ if (require.main === module) {
       password: process.env.DB_PASSWORD || '',
       database: process.env.DB_NAME || 'Rv_Label',
       multipleStatements: true, // só aqui: as migrações têm vários comandos, e a API não usa isto
+      ssl: process.env.DB_SSL_CA ? { ca: process.env.DB_SSL_CA.replace(/\\n/g, '\n') } : undefined, // igual ao db.js
     });
     try {
       await migrar(con);
