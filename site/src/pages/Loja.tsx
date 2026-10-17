@@ -1,4 +1,5 @@
 import { LayoutGrid, List, SearchX } from "lucide-react";
+import { useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import CartaoPeca from "@/components/CartaoPeca";
 import { AoRolar } from "@/components/Efeitos";
@@ -7,6 +8,10 @@ import { useCatalogo } from "@/context/Catalogo";
 import { useTitulo } from "@/hooks/useTitulo";
 import { CATEGORIAS, type Categoria } from "@/lib/catalogo";
 import { FAIXAS, filtrarVitrine, ORDENS, type Faixa, type Ordem } from "@/lib/filtro";
+import { reduzirMovimento } from "@/lib/scroll";
+import EsqueletoGrade from "@/components/EsqueletoGrade";
+
+const ALTURA_CABECALHO = 72; // Header.tsx: h-[72px], fixo no topo
 
 /** Valor da URL só vale se for uma das opções (link velho ou editado à mão não quebra a página). */
 const opcao = <T extends string>(valor: string | null, opcoes: readonly T[]): T | null =>
@@ -44,8 +49,22 @@ export default function Loja() {
   };
   const limparFiltros = () => mudar({ tamanho: null, cor: null, preco: null });
 
+  // Trocar a categoria pela barra presa lá embaixo encolhe a lista: volta para o começo dela, senão a pessoa cai no vazio.
+  const inicio = useRef<HTMLDivElement>(null);
+  const voltarAoInicio = () => {
+    const el = inicio.current;
+    if (!el) return;
+    const topo = el.getBoundingClientRect().top + window.scrollY - ALTURA_CABECALHO;
+    if (window.scrollY > topo) window.scrollTo({ top: topo, behavior: reduzirMovimento() ? "auto" : "smooth" });
+  };
+
   const pilula = (rotulo: string, valor: Categoria | null) => (
-    <button key={rotulo} type="button" aria-pressed={ativa === valor} onClick={() => mudar({ categoria: valor })} className="pilula">
+    <button key={rotulo} type="button" aria-pressed={ativa === valor} onClick={() => {
+        mudar({ categoria: valor });
+        voltarAoInicio();
+      }}
+      className="pilula"
+    >
       {rotulo}
     </button>
   );
@@ -76,8 +95,10 @@ export default function Loja() {
         </div>
       </AoRolar>
 
-      <div className="mt-6 flex items-start justify-between gap-3">
-        <div className="-ml-6 flex gap-2 overflow-x-auto pb-4 pl-6" role="group" aria-label="Filtrar por categoria">
+      <div ref={inicio} aria-hidden />
+      {/* Barra presa sob o cabeçalho ao rolar (a barra fixa do app). O fundo vai de ponta a ponta da tela. */}
+      <div className="sticky top-[72px] z-40 mt-3 flex items-center justify-between gap-3 py-3 before:absolute before:inset-y-0 before:left-1/2 before:-z-10 before:w-screen before:-translate-x-1/2 before:border-b before:border-linha before:bg-preto/95">
+        <div className="-my-3 -ml-6 flex gap-2 overflow-x-auto py-3 pl-6 [scrollbar-width:none]" role="group" aria-label="Filtrar por categoria">
           {pilula("Todos", null)}
           {categorias.map((c) => pilula(CATEGORIAS[c], c))}
         </div>
@@ -94,7 +115,10 @@ export default function Loja() {
               aria-pressed={grade === eGrade}
               aria-label={rotulo}
               title={rotulo}
-              onClick={() => mudar({ vista: eGrade ? "grade" : null })}
+              onClick={() => {
+                mudar({ vista: eGrade ? "grade" : null });
+                voltarAoInicio();
+              }}
               className="pilula w-11 px-0"
             >
               <Icone className="h-4 w-4" aria-hidden />
@@ -104,7 +128,7 @@ export default function Loja() {
       </div>
 
       {pecas.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4" role="group" aria-label="Filtros">
+        <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4" role="group" aria-label="Filtros">
           {seletor("tamanho", "Tamanho", filtros.tamanho, tamanhos.map((t) => [t, t]), "Todos")}
           {seletor("cor", "Cor", filtros.cor, cores.map((c) => [c, c]), "Todas")}
           {seletor("preco", "Preço", filtros.faixa, Object.entries(FAIXAS).map(([k, f]) => [k, f.rotulo]), "Qualquer")}
@@ -113,7 +137,7 @@ export default function Loja() {
       )}
 
       {/* min-h: a página curta deixaria o rodapé na tela, e a lista, ao chegar, o empurraria para baixo. */}
-      {carregando && <p className="mt-8 min-h-[100svh] text-suave">Carregando a coleção…</p>}
+      {carregando && <EsqueletoGrade className="mt-8 min-h-[100svh]" />}
       {erro && <p role="alert" className="mt-8 text-perigo">Não consegui carregar o catálogo agora. Tente recarregar a página.</p>}
       {!carregando && !erro && lista.length === 0 && (
         <div className="mt-12 flex flex-col items-center text-center">

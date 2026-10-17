@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import CartaoPeca from "@/components/CartaoPeca";
 import { AoRolar, ParallaxFoto } from "@/components/Efeitos";
+import EsqueletoGrade from "@/components/EsqueletoGrade";
 import FotoPeca from "@/components/FotoPeca";
 import { useCatalogo } from "@/context/Catalogo";
 import { useTitulo } from "@/hooks/useTitulo";
@@ -40,7 +41,7 @@ export default function Colecao() {
       </AoRolar>
 
       <section className="mx-auto max-w-[1100px] px-6 pt-12" aria-label={`Peças: ${colecao.titulo}`}>
-        {carregando && <p className="min-h-[100svh] text-center text-suave">Carregando…</p>}
+        {carregando && <EsqueletoGrade className="min-h-[100svh]" />}
         {!carregando && daColecao.length === 0 && <p className="text-center text-suave">Ainda não temos peças nessa coleção.</p>}
         <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 lg:grid-cols-4">
           {daColecao.map((p, i) => (

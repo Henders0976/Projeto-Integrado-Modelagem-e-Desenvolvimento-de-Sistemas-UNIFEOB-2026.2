@@ -44,7 +44,7 @@ export default function Vitrine({ pecas }: { pecas: Peca[] }) {
     <div className="grid items-start gap-8 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:gap-14">
       <div
         ref={janela}
-        className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.4)] md:sticky md:top-28 md:aspect-[4/5]"
+        className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.4)] md:sticky md:top-40 md:aspect-[4/5]"
       >
         {pecas.map((p) => (
           <FotoPeca

@@ -27,7 +27,17 @@ export default function Peca() {
   const [ampliada, setAmpliada] = useState(false);
   useTitulo(peca?.nome);
 
-  if (carregando) return <p className="mx-auto min-h-[100svh] max-w-[1000px] px-6 pt-36 text-suave">Carregando…</p>;
+  if (carregando)
+    return (
+      <div role="status" aria-label="Carregando a peça" className="mx-auto grid min-h-[100svh] max-w-[1000px] items-start gap-10 px-6 pt-28 motion-safe:animate-pulse lg:grid-cols-2 lg:gap-14">
+        <div aria-hidden className="aspect-[3/4] rounded bg-elevado" />
+        <div aria-hidden className="space-y-4 pt-8">
+          <div className="h-10 w-3/4 rounded-sm bg-elevado" />
+          <div className="h-8 w-1/3 rounded-sm bg-elevado" />
+          <div className="h-20 rounded-sm bg-elevado" />
+        </div>
+      </div>
+    );
   if (!peca) return <NaoEncontrada />;
 
   const cor = peca.cores[Math.min(corIdx, peca.cores.length - 1)];
