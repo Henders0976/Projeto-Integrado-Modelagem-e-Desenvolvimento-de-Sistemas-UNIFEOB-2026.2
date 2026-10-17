@@ -17,11 +17,36 @@
   font-style: italic;
   font-display: swap;
 }
+/* Manrope (licença OFL em public/fonts/OFL-Manrope.txt): corpo do texto, como no app. */
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
 
 @layer base {
   html {
     scroll-behavior: smooth;
-    background-color: #0b0b0b;
+    background-color: #0b0b0c;
     /* A barra de rolagem não some ao travar a página (overlay da vitrine): sem pulo de layout. */
     scrollbar-gutter: stable;
   }
@@ -35,16 +60,17 @@
     overflow-x: clip;
   }
 
-  /* Fundo do app: vermelho que desce até o preto, com um brilho leve no alto. Fixo, não rola com a página. */
+  /* Fundo do app (FundoLiquido, corBase brandDeep): vinho escuro no alto que desce até o preto, com um
+     brilho vermelho leve. O vermelho da marca fica para os botões e destaques. Fixo, não rola com a página. */
   body::before {
     content: "";
     position: fixed;
     inset: 0;
     z-index: -1;
     background:
-      radial-gradient(60% 40% at 18% 8%, rgba(255, 120, 120, 0.16), transparent 62%),
-      radial-gradient(50% 35% at 86% 28%, rgba(255, 255, 255, 0.07), transparent 62%),
-      linear-gradient(180deg, #b3121e 0%, #8d1823 22%, #0b0b0b 100%);
+      radial-gradient(60% 40% at 18% 8%, rgba(179, 18, 30, 0.22), transparent 62%),
+      radial-gradient(50% 35% at 86% 28%, rgba(255, 255, 255, 0.04), transparent 62%),
+      linear-gradient(180deg, #2a0a0e 0%, #0b0b0c 70%);
   }
 
   h1,
@@ -65,17 +91,37 @@
 }
 
 @layer components {
-  /* Campos só com linha embaixo, como no app. */
+  /* Campo com contorno e rótulo acima (RvTextField do app). Borda "mudo": 3:1 sobre o fundo, visível como controle. */
   .campo {
-    @apply block w-full border-0 border-b border-linha bg-transparent px-0 py-2 text-texto placeholder:text-suave/70 focus:border-texto focus:outline-none focus:ring-0;
+    @apply mt-1.5 block min-h-[48px] w-full rounded border border-mudo bg-painel px-3.5 py-2.5 text-texto placeholder:text-mudo focus:border-vermelho focus:outline-none focus:ring-1 focus:ring-vermelho aria-[invalid=true]:border-perigo;
+  }
+  .rotulo {
+    @apply text-sm font-medium text-suave;
+  }
+  .erro {
+    @apply mt-1.5 text-sm text-perigo;
   }
 
+  /* Botões do app: cheio em vermelho da marca, contorno neutro. */
   .btn-cheio {
-    @apply inline-flex min-h-[52px] items-center justify-center gap-2 rounded-[2px] bg-texto px-8 text-[15px] font-semibold tracking-wide text-preto transition hover:opacity-90 disabled:opacity-50;
+    @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded bg-vermelho px-7 text-[15px] font-semibold tracking-wide text-white transition hover:bg-vermelho-hover disabled:opacity-50;
   }
 
   .btn-contorno {
-    @apply inline-flex min-h-[52px] items-center justify-center gap-2 rounded-[2px] border border-texto px-8 text-[15px] font-semibold tracking-wide text-texto transition hover:bg-texto/10;
+    @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded border border-texto/40 px-7 text-[15px] font-semibold tracking-wide text-texto transition hover:border-texto hover:bg-white/5;
+  }
+
+  /* Pílula de escolha (RvChip): escolhida = fundo vermelho suave e borda vermelha. */
+  .pilula {
+    @apply inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-linha px-4 text-sm font-semibold text-texto transition hover:border-mudo hover:bg-white/5 aria-[pressed=true]:border-vermelho aria-[pressed=true]:bg-vermelho-suave;
+  }
+
+  .cartao {
+    @apply rounded-lg border border-linha bg-painel;
+  }
+
+  .preco {
+    @apply font-semibold tabular-nums text-texto;
   }
 }
 

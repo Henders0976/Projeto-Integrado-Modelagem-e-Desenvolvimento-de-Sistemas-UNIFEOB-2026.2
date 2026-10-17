@@ -1,5 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { CNPJ, EMAIL_CONTATO, emailPlausivel, soDigitos } from "./formato";
+import { CNPJ, EMAIL_CONTATO, emailPlausivel, formatarCpf, formatarTelefone, soDigitos } from "./formato";
+
+describe("máscaras (as mesmas do app)", () => {
+  it("telefone com 11 e 10 dígitos", () => {
+    expect(formatarTelefone("11999998888")).toBe("(11) 99999-8888");
+    expect(formatarTelefone("1133334444")).toBe("(11) 3333-4444");
+  });
+
+  it("telefone digitado aos poucos e com +55", () => {
+    expect(formatarTelefone("1")).toBe("(1");
+    expect(formatarTelefone("119")).toBe("(11) 9");
+    expect(formatarTelefone("(11) 9999")).toBe("(11) 9999");
+    expect(formatarTelefone("5511999998888")).toBe("5511999998888");
+  });
+
+  it("CPF", () => {
+    expect(formatarCpf("12345678901")).toBe("123.456.789-01");
+    expect(formatarCpf("1234")).toBe("123.4");
+    expect(formatarCpf("123456789012345")).toBe("123.456.789-01");
+  });
+});
 
 /** Confere os dois dígitos verificadores do CNPJ (módulo 11). */
 function cnpjValido(texto: string): boolean {

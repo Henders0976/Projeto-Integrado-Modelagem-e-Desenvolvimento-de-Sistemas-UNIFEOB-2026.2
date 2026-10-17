@@ -45,7 +45,7 @@ export default function Novidades({ foto }: { foto?: string }) {
             aria-describedby={erro ? "novidades-erro" : undefined}
             className="campo"
           />
-          {erro && <p id="novidades-erro" role="alert" className="mt-1 text-sm text-suave">{erro}</p>}
+          {erro && <p id="novidades-erro" role="alert" className="erro">{erro}</p>}
           <button type="submit" className="btn-cheio mt-5 w-full">Quero receber</button>
         </form>
       </div>

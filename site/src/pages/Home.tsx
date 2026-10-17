@@ -58,8 +58,7 @@ export default function Home() {
             </p>
             <p className="intro mt-3 text-[15px] text-suave" style={atraso(340)}>Peças únicas, feitas pra você.</p>
             <div className="intro mt-8 flex flex-wrap gap-3" style={atraso(420)}>
-              <Link to="/loja" className="btn-cheio">Ver peças disponíveis</Link>
-              <a href="#como-comprar" className="btn-contorno">Como comprar</a>
+              <Link to="/loja" className="btn-cheio">Ver coleção</Link>
             </div>
           </div>
 
@@ -121,7 +120,7 @@ export default function Home() {
           </div>
         </AoRolar>
         {carregando && <p className="mt-10 text-suave">Carregando a coleção…</p>}
-        {erro && <p role="alert" className="mt-10 text-suave">Não consegui carregar o catálogo agora. Tente recarregar a página.</p>}
+        {erro && <p role="alert" className="mt-10 text-perigo">Não consegui carregar o catálogo agora. Tente recarregar a página.</p>}
         <div className="mt-10 grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3">
           {destaques.map((p, i) => (
             <AoRolar key={p.id} escalonar={i * 0.1}>
@@ -197,7 +196,7 @@ export default function Home() {
         <div className="mt-7 grid gap-3 md:grid-cols-3">
           {PASSOS.map(({ Icone, texto }, i) => (
             <AoRolar key={texto} escalonar={i * 0.1}>
-              <div className="h-full rounded border border-linha bg-white/[0.08] p-6 transition duration-200 hover:-translate-y-1.5 hover:border-texto hover:bg-white/15">
+              <div className="h-full cartao p-6 transition duration-200 hover:-translate-y-1.5 hover:border-vermelho/40">
                 <div className="flex items-start justify-between">
                   <span className="font-titulo text-[56px] leading-none">{i + 1}</span>
                   <Icone className="h-6 w-6 text-suave" aria-hidden />

@@ -48,6 +48,8 @@ export async function enviarPedido(itens: ItemSacola[], comprador: Comprador): P
 
 export interface PedidoConsultado {
   id: number;
+  /** Data do pedido (ISO). Só a etapa "Recebido" tem data: a API não guarda quando o status mudou. */
+  data?: string;
   status: string;
   total: number;
   precoPendente: boolean;
