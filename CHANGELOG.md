@@ -15,6 +15,14 @@ Segue o formato do [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   também no rodapé. Vale para o site e para o app (tela de privacidade e rodapé iguais nos dois).
 - Sem deslocamento de layout ao carregar (CLS 0 na home e na loja), nomes acessíveis dos cartões corrigidos, `robots.txt`
   e pré-carregamento do catálogo. Lighthouse no celular: acessibilidade, boas práticas e SEO em 100.
+- Visual do DESIGN.md igual ao app 1.3.0: tokens de cor e raio, Manrope no texto, botões em vermelho da marca, campos com
+  contorno e pílulas de escolha.
+- Loja com filtros de tamanho, cor, preço e ordenação (guardados na URL) e "Limpar filtros" quando nada aparece; a barra de
+  categorias fica presa sob o cabeçalho ao rolar e, ao trocar de categoria lá embaixo, a página volta ao começo da lista.
+- Peça com miniaturas de frente/costas e foto em tela cheia com zoom; cartões com borda e brilho vermelhos no hover.
+- Máscaras de telefone e CPF, resumo da sacola em cartão (lateral no desktop, preso embaixo no celular) e "Meus pedidos" com
+  selo de status colorido e linha do tempo.
+- Cartões cinzas (skeleton) no lugar da grade e da peça enquanto o catálogo carrega.
 
 ### API (`api/`)
 - API em Node + MySQL na pasta própria, sem o `.env` (a chave nunca vai para o GitHub).
