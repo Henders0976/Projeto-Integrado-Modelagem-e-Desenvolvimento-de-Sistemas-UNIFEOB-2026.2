@@ -184,7 +184,7 @@ export default function Header() {
             {quantidade > 0 && (
               <span
                 key={pulso}
-                className={`absolute right-0.5 top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-texto px-1 text-[11px] font-semibold text-preto ${pulso ? "selo-pulso" : ""}`}
+                className={`absolute right-0.5 top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-vermelho px-1 text-[11px] font-semibold text-white ${pulso ? "selo-pulso" : ""}`}
               >
                 {quantidade}
               </span>

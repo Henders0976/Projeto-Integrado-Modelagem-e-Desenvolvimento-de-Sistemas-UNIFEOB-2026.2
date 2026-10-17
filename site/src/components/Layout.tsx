@@ -25,7 +25,7 @@ export default function Layout() {
         <Outlet />
       </main>
       <Footer />
-      <Toaster position="bottom-center" toastOptions={{ style: { background: "#FFF7F5", color: "#0B0B0B", borderRadius: 2 } }} />
+      <Toaster position="bottom-center" toastOptions={{ style: { background: "#1C1C1F", color: "#F4F1EE", border: "1px solid #2A2A2E", borderRadius: 10 } }} />
     </div>
   );
 }

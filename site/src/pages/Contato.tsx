@@ -38,7 +38,7 @@ export default function Contato() {
 
   const campo = (id: string, rotulo: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
     <div className="mb-3">
-      <label htmlFor={`contato-${id}`} className="text-sm text-suave">{rotulo}</label>
+      <label htmlFor={`contato-${id}`} className="rotulo">{rotulo}</label>
       <input
         id={`contato-${id}`}
         name={id}
@@ -47,7 +47,7 @@ export default function Contato() {
         aria-describedby={erros[id] ? `contato-${id}-erro` : undefined}
         {...props}
       />
-      {erros[id] && <p id={`contato-${id}-erro`} role="alert" className="mt-1 text-sm text-suave">{erros[id]}</p>}
+      {erros[id] && <p id={`contato-${id}-erro`} role="alert" className="erro">{erros[id]}</p>}
     </div>
   );
 
@@ -77,7 +77,7 @@ export default function Contato() {
               {campo("email", "E-mail", { type: "email", autoComplete: "email" })}
               {campo("assunto", "Assunto")}
               <div className="mb-3">
-                <label htmlFor="contato-mensagem" className="text-sm text-suave">Mensagem</label>
+                <label htmlFor="contato-mensagem" className="rotulo">Mensagem</label>
                 <textarea
                   id="contato-mensagem"
                   name="mensagem"
@@ -86,7 +86,7 @@ export default function Contato() {
                   aria-invalid={!!erros.mensagem}
                   aria-describedby={erros.mensagem ? "contato-mensagem-erro" : undefined}
                 />
-                {erros.mensagem && <p id="contato-mensagem-erro" role="alert" className="mt-1 text-sm text-suave">{erros.mensagem}</p>}
+                {erros.mensagem && <p id="contato-mensagem-erro" role="alert" className="erro">{erros.mensagem}</p>}
               </div>
               <button type="submit" className="btn-cheio mt-3 w-full sm:w-auto">Enviar pelo WhatsApp</button>
             </form>

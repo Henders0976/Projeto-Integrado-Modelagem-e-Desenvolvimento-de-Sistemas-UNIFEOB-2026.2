@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { X, ZoomIn } from "lucide-react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import CartaoPeca from "@/components/CartaoPeca";
@@ -8,7 +9,7 @@ import SeletorQuantidade from "@/components/SeletorQuantidade";
 import { useCatalogo } from "@/context/Catalogo";
 import { useSacola } from "@/context/Sacola";
 import { useTitulo } from "@/hooks/useTitulo";
-import { CATEGORIAS, precoTexto } from "@/lib/catalogo";
+import { CATEGORIAS, precoTexto, type Cor } from "@/lib/catalogo";
 import { formatarReais } from "@/lib/formato";
 import NaoEncontrada from "./NaoEncontrada";
 
@@ -23,6 +24,7 @@ export default function Peca() {
   const [tamanho, setTamanho] = useState<string | null>(null);
   const [quantidade, setQuantidade] = useState(1);
   const [lado, setLado] = useState<"frente" | "costas">("frente");
+  const [ampliada, setAmpliada] = useState(false);
   useTitulo(peca?.nome);
 
   if (carregando) return <p className="mx-auto min-h-[100svh] max-w-[1000px] px-6 pt-36 text-suave">Carregando…</p>;
@@ -45,17 +47,22 @@ export default function Peca() {
   }
 
   const pilula = (ativa: boolean, aoTocar: () => void, rotulo: string, extra?: React.ReactNode) => (
-    <button
-      key={rotulo}
-      type="button"
-      aria-pressed={ativa}
-      onClick={aoTocar}
-      className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-[2px] border px-4 text-sm font-semibold transition ${
-        ativa ? "border-texto bg-texto text-preto" : "border-linha hover:bg-white/10"
-      }`}
-    >
+    <button key={rotulo} type="button" aria-pressed={ativa} onClick={aoTocar} className="pilula">
       {extra}
       {rotulo}
+    </button>
+  );
+
+  const miniatura = (l: "frente" | "costas", src: string | undefined) => (
+    <button
+      key={l}
+      type="button"
+      aria-pressed={lado === l}
+      aria-label={`Foto: ${l === "frente" ? "Frente" : "Costas"}`}
+      onClick={() => setLado(l)}
+      className={`h-20 w-16 overflow-hidden rounded-sm p-0.5 transition ${lado === l ? "ring-2 ring-vermelho" : "ring-1 ring-linha hover:ring-mudo"}`}
+    >
+      <FotoPeca src={src} cor={cor} alt="" className="h-full w-full rounded-[4px]" />
     </button>
   );
 
@@ -73,18 +80,28 @@ export default function Peca() {
         <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-14">
           <div>
             {/* 3:4 e enquadramento do app (peca_page.dart): a foto inteira, sem cortar. O nome liga com o do cartão (Hero). */}
-            <div
-              className="aspect-[3/4] overflow-hidden rounded shadow-[0_16px_30px_rgba(0,0,0,0.35)]"
+            <button
+              type="button"
+              disabled={!foto}
+              onClick={() => setAmpliada(true)}
+              aria-label="Ampliar foto"
+              className="relative block aspect-[3/4] w-full cursor-zoom-in overflow-hidden rounded shadow-[0_16px_30px_rgba(0,0,0,0.35)] disabled:cursor-default"
               style={{ viewTransitionName: "foto-peca" }}
             >
               <FotoPeca src={foto} cor={cor} alt={`${peca.nome}, ${lado}`} loading="eager" className="h-full w-full" posicao="50% 25%" />
-            </div>
+              {foto && (
+                <span aria-hidden className="absolute bottom-3 right-3 grid h-9 w-9 place-items-center rounded-full bg-preto/70">
+                  <ZoomIn className="h-5 w-5" />
+                </span>
+              )}
+            </button>
             {peca.fotoCostas && (
-              <div className="mt-3 flex gap-2" role="group" aria-label="Lado da peça">
-                {pilula(lado === "frente", () => setLado("frente"), "Frente")}
-                {pilula(lado === "costas", () => setLado("costas"), "Costas")}
+              <div className="mt-3 flex justify-center gap-2" role="group" aria-label="Lado da peça">
+                {miniatura("frente", peca.fotos[0])}
+                {miniatura("costas", peca.fotoCostas)}
               </div>
             )}
+            {ampliada && foto && <Ampliada src={foto} cor={cor} alt={`${peca.nome}, ${lado}`} aoFechar={() => setAmpliada(false)} />}
           </div>
 
           <div className="flex flex-col">
@@ -93,7 +110,7 @@ export default function Peca() {
               {peca.material ? ` · ${peca.material}` : ""}
             </p>
             <h1 className="mt-3 text-[36px] leading-[1.1]">{peca.nome}</h1>
-            <p className="mt-3 text-[28px] tabular-nums">{precoTexto(peca, formatarReais)}</p>
+            <p className="preco mt-3 text-[28px]">{precoTexto(peca, formatarReais)}</p>
             {peca.descricao && <p className="mt-5 leading-relaxed text-suave">{peca.descricao}</p>}
 
             {peca.cores.length > 1 && (
@@ -139,5 +156,53 @@ export default function Peca() {
         </section>
       )}
     </>
+  );
+}
+
+/**
+ * Foto em tela cheia (o Dialog.fullscreen + InteractiveViewer do app). Clique dá zoom de 2,5x no ponto clicado e o
+ * mouse passeia pela foto; outro clique volta. No celular, o gesto de pinça do navegador também funciona aqui.
+ */
+function Ampliada({ src, cor, alt, aoFechar }: { src: string; cor: Cor; alt: string; aoFechar: () => void }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const [zoom, setZoom] = useState<{ x: number; y: number } | null>(null);
+  useEffect(() => ref.current?.showModal(), []);
+
+  const ponto = (e: MouseEvent<HTMLElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    return { x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 };
+  };
+
+  return (
+    <dialog
+      ref={ref}
+      onClose={aoFechar}
+      aria-label={alt}
+      className="m-0 h-[100dvh] max-h-none w-screen max-w-none bg-preto p-0 text-texto backdrop:bg-preto"
+    >
+      <div className="grid h-full w-full place-items-center overflow-hidden">
+        <div
+          className={`aspect-[3/4] h-full max-h-[100dvh] max-w-full overflow-hidden ${zoom ? "cursor-zoom-out" : "cursor-zoom-in"}`}
+          onClick={(e) => setZoom(zoom ? null : ponto(e))}
+          onPointerMove={(e) => zoom && e.pointerType === "mouse" && setZoom(ponto(e))}
+        >
+          <div
+            className="h-full w-full transition-transform duration-200 motion-reduce:transition-none"
+            style={zoom ? { transform: "scale(2.5)", transformOrigin: `${zoom.x}% ${zoom.y}%` } : undefined}
+          >
+            <FotoPeca src={src} cor={cor} alt={alt} loading="eager" posicao="50% 50%" className="h-full w-full" />
+          </div>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={() => ref.current?.close()}
+        aria-label="Fechar"
+        autoFocus
+        className="fixed right-4 top-4 grid h-12 w-12 place-items-center rounded-full bg-elevado/90 transition hover:bg-elevado"
+      >
+        <X className="h-5 w-5" aria-hidden />
+      </button>
+    </dialog>
   );
 }

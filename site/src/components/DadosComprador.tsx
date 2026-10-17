@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import type { Comprador } from "@/lib/api";
-import { soDigitos } from "@/lib/formato";
+import { formatarCpf, formatarTelefone, soDigitos } from "@/lib/formato";
 
 interface Props {
   aberto: boolean;
@@ -37,18 +37,24 @@ export default function DadosComprador({ aberto, enviando, aoFechar, aoConfirmar
     if (Object.keys(novos).length === 0) aoConfirmar({ nome, telefone, cpf: cpf || null });
   }
 
-  const campo = (id: string, rotulo: string, extra: Record<string, string> = {}) => (
+  // shortcut: a máscara põe o cursor no fim (como no app); editar no meio do número pula o cursor. Calcular a posição se incomodar.
+  const mascara = (formatar: (t: string) => string) => (e: FormEvent<HTMLInputElement>) => {
+    e.currentTarget.value = formatar(e.currentTarget.value);
+  };
+
+  const campo = (id: string, rotulo: string, extra: Record<string, string> = {}, aoDigitar?: (e: FormEvent<HTMLInputElement>) => void) => (
     <div className="mb-4">
-      <label htmlFor={`comprador-${id}`} className="text-sm text-suave">{rotulo}</label>
+      <label htmlFor={`comprador-${id}`} className="rotulo">{rotulo}</label>
       <input
         id={`comprador-${id}`}
         name={id}
         className="campo"
         aria-invalid={!!erros[id]}
         aria-describedby={erros[id] ? `comprador-${id}-erro` : undefined}
+        onInput={aoDigitar}
         {...extra}
       />
-      {erros[id] && <p id={`comprador-${id}-erro`} role="alert" className="mt-1 text-sm text-suave">{erros[id]}</p>}
+      {erros[id] && <p id={`comprador-${id}-erro`} role="alert" className="erro">{erros[id]}</p>}
     </div>
   );
 
@@ -56,22 +62,22 @@ export default function DadosComprador({ aberto, enviando, aoFechar, aoConfirmar
     <dialog
       ref={ref}
       onClose={aoFechar}
-      className="w-[min(92vw,440px)] rounded border border-linha bg-painel p-6 text-texto backdrop:bg-black/70"
+      className="w-[min(92vw,440px)] rounded-lg border border-linha bg-elevado p-6 text-texto backdrop:bg-black/70"
       aria-labelledby="comprador-titulo"
     >
       <form onSubmit={enviar} noValidate>
         <h2 id="comprador-titulo" className="mb-5 text-[26px]">Seus dados</h2>
         {campo("nome", "Nome", { autoComplete: "name" })}
-        {campo("telefone", "Telefone (com DDD)", { inputMode: "tel", autoComplete: "tel" })}
-        {campo("cpf", "CPF (opcional)", { inputMode: "numeric" })}
+        {campo("telefone", "Telefone (com DDD)", { inputMode: "tel", autoComplete: "tel", placeholder: "(11) 99999-9999" }, mascara(formatarTelefone))}
+        {campo("cpf", "CPF (opcional)", { inputMode: "numeric", placeholder: "000.000.000-00" }, mascara(formatarCpf))}
         <label className="flex items-start gap-3 text-sm">
-          <input type="checkbox" name="aceito" className="mt-1 h-4 w-4 accent-[#FFF7F5]" />
+          <input type="checkbox" name="aceito" className="mt-1 h-4 w-4 accent-vermelho" />
           <span>
             Concordo em usar meus dados só para este pedido.{" "}
             <Link to="/privacidade" target="_blank" className="underline">Ler privacidade e termos</Link>
           </span>
         </label>
-        {erros.aceito && <p role="alert" className="mt-1 text-sm text-suave">{erros.aceito}</p>}
+        {erros.aceito && <p role="alert" className="erro">{erros.aceito}</p>}
         <div className="mt-6 flex justify-end gap-3">
           <button type="button" onClick={aoFechar} className="btn-contorno min-h-[44px] px-5">Cancelar</button>
           <button type="submit" disabled={enviando} className="btn-cheio min-h-[44px] px-5">
